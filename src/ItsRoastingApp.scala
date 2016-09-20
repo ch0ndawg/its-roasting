@@ -1,6 +1,7 @@
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
+import org.apache.spark.RangePartitioner
 
 object ItsRoastingApp {
   val conf = new SparkConf().setMaster("local").setAppName("My App")
@@ -27,9 +28,9 @@ object ItsRoastingApp {
       val (i,u) = currentVal // REPLACE with ((i,j),item) for production, or even ((i,j,k), item) if time permits
       
       // normalized inhomogeneous term
-      val dtf = coeff*dx*dx/k * f(i) // streaming data at timestep; coeff is k dt/dx^2
+      val dtf = 1.0//coeff*dx*dx/k * f(i) // streaming data at timestep; coeff is k dt/dx^2
       
-      // produce the variaous increments using the stencil (this is the "matrix multiplication")
+      // produce the varicous increments using the stencil (this is the "matrix multiplication")
       val incrementVals = Vector((i, -2*coeff*u), (i-1,coeff*u), (i+1,coeff*u), (i, dtf)) // also add in inhomogeneous term
       
       
@@ -38,18 +39,40 @@ object ItsRoastingApp {
       (incrementVals filter interior) :+ currentVal
     }
     
-    val temp = (0 until ncells) map tempFromIdx // REPLACE with: previous timestep's u
+    val temp = (0 until ncells) map tempFromIdx // REPLACE with: initial condition
     // REPLACE : Read up on Range Partitioning, and curse them for making the Python so different from Scala
     val tempParallel = sc.parallelize(temp)//partitionBy(new RangePartitioner(nprocs))
-    
+    val rangePartitioner = new RangePartitioner(nprocs,tempParallel)
+   
+    var currentTemp = tempParallel.partitionBy(rangePartitioner) 
+
     for (step <- 0 until nsteps) {
-    	println(step)
+    	// OUTPUT old timestep to database
+      // RESOLVE whether or not the same Range Partition can be used
+      
     	val newStreamingData = Vector[Double]() // read from Kafka stream here.
-    	val stencilParts = tempParallel.flatMap(stencil(_,newStreamingData))
-    	val newTemp = stencilParts.reduceByKey(_+_)
+    	val stencilParts = currentTemp.flatMap(stencil(_,newStreamingData))
+    	currentTemp = stencilParts.reduceByKey(_+_) // REPLACE with update
     	// write out to database
     	// assign to oldTemp, or yield
     }
+    
+    // TAIL recursion method, in case Spark barks at me for using "var currentTemp ="
+    
+    /*
+     * currentTemp = tempParallel.partitionBy(rangePartitioner)
+     * @tailrec
+     * def timeStep(u : RDD[(Int,Double)], niter) : Unit = {
+     * 	 WRITE u to database
+     *   val newStreamingData = Kafka stream
+     *   val stencilParts = u.flatMap(stencil(_,newStreamingData))
+     *   val newTemp = stencilParts.reduceByKey(_+_)
+     *   if (niter > 0) timeStep(newTemp, niter-1)
+     *   else WRITE newTemp to database
+     * }
+     * timeStep(currentTemp,nsteps)
+     * 
+     */
   }
   simulation(100, 20, 4)
 }
