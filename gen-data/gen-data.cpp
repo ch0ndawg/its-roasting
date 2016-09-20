@@ -47,8 +47,8 @@ int main(int argc, char* argv[])
       for (int j = 0; j < M; j++) {
         double increment = nd(generator);
         nodes[matIndex(i,j,N)] += increment;
-        std::cout << "{ \"x\" :" << i << ", \"y\":" << j << ", \"timestamp\" : " << nodes[matIndex(i,j,N)]
-         << ", \"gen\": "<< ud(generator) << endl;
+        std::cout << "{ \"x\" : " << i << ", \"y\": " << j << ", \"timestamp\" : " << nodes[matIndex(i,j,N)]
+         << ", \"gen\": "<< ud(generator) << " }" << endl;
       }
     }
   }
