@@ -2,6 +2,7 @@
 #include <cmath>
 #include <chrono>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <numeric>
 #include <vector>
@@ -16,10 +17,12 @@ int matIndex(int i, int j, int N)
 
 int main(int argc, char* argv[])
 {
-  double mean_increment = 1;
-  double increment_error = 0.1;
+  double mean_increment = 0;
   double gen_min = 0.0;
   double gen_max = 10.0;
+  int timeUnit = 100;
+  double tolerance = 0.1;
+  double increment_error = timeUnit*tolerance;
 
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::default_random_engine generator (seed);
@@ -40,14 +43,15 @@ int main(int argc, char* argv[])
   numx >> N;
   numy >> M;
 
-  vector<double> nodes(N*M);
+  // vector<double> nodes(N*M);
 
-  for (int iter=0; iter < nIters; iter++) {
+  nIters *= timeUnit;
+  for (int iter=0; iter < nIters; iter+=timeUnit) {
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < M; j++) {
         double increment = nd(generator);
-        nodes[matIndex(i,j,N)] += increment;
-        std::cout << "{ \"x\" : " << i << ", \"y\": " << j << ", \"timestamp\" : " << nodes[matIndex(i,j,N)]
+        // nodes[matIndex(i,j,N)] += increment;
+        std::cout << "{ \"x\" : " << i << ", \"y\": " << j << ", \"timestamp\" : " << iter+round(increment)
          << ", \"gen\": "<< ud(generator) << " }" << endl;
       }
     }
