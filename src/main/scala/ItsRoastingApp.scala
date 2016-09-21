@@ -66,19 +66,18 @@ object ItsRoastingApp  {
       //@tailrec
       def timeStep(u : org.apache.spark.rdd.RDD[(Int,Double)], niter: Int) : Unit = {
       	// WRITE u to database
+      	u.collect().map(println)
+      	
         val newStreamingData = Vector[Double]() // Kafka stream
         val stencilParts = u.flatMap(stencil(_,newStreamingData))
         val newU = stencilParts.reduceByKey(_+_)
         // Possibly set up a new Range Partitioner for it here
-        if (niter > 0) timeStep(u, niter-1)
+        if (niter > 0) timeStep(newU, niter-1)
         // else WRITE newTemp to database
       }
       timeStep(tempParallel.partitionBy(rangePartitioner) ,nsteps)
   }
   def main(args: Array[String]) {
-    // simulation(100, 20, 4)
-    val myFile = sc.textFile("gen-data/gen-data.cpp")
-    val results = myFile.flatMap(line => line.split(" ")).map(word => (word,1)).reduceByKey(_+_)
-    results.collect().map(println)
+    simulation(100, 20, 4)
   }
 }
