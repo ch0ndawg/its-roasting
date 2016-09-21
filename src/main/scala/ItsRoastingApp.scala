@@ -43,21 +43,6 @@ object ItsRoastingApp  {
     // REPLACE : Read up on Range Partitioning, and curse them for making the Python so different from Scala
     val tempParallel = sc.parallelize(temp)//partitionBy(new RangePartitioner(nprocs))
     val rangePartitioner = new RangePartitioner(nprocs,tempParallel)
-   
-   /* var currentTemp = tempParallel.partitionBy(rangePartitioner) 
-
-    for (step <- 0 until nsteps) {
-    	// OUTPUT old timestep to database
-      // RESOLVE whether or not the same Range Partition can be used
-      
-    	val newStreamingData = Vector[Double]() // read from Kafka stream here.
-    	val stencilParts = currentTemp.flatMap(stencil(_,newStreamingData))
-    	currentTemp = stencilParts.reduceByKey(_+_) // REPLACE with update
-    	
-    	println(currentTemp.collect())
-    	// write out to database
-    	// assign to oldTemp, or yield
-    } */
     
     // TAIL recursion method, in case Spark barks at me for using "var currentTemp ="
     
@@ -66,14 +51,14 @@ object ItsRoastingApp  {
       //@tailrec
       def timeStep(u : org.apache.spark.rdd.RDD[(Int,Double)], niter: Int) : Unit = {
       	// WRITE u to database
-      	u.collect().map(println)
+      	u.collect().foreach(println)
       	
         val newStreamingData = Vector[Double]() // Kafka stream
         val stencilParts = u.flatMap(stencil(_,newStreamingData))
         val newU = stencilParts.reduceByKey(_+_)
         // Possibly set up a new Range Partitioner for it here
         if (niter > 0) timeStep(newU, niter-1)
-        // else WRITE newTemp to database
+        else newU.collect().foreach(println) //WRITE newTemp to database
       }
       timeStep(tempParallel.partitionBy(rangePartitioner) ,nsteps)
   }

@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
   // vector<double> nodes(N*M);
 
   nIters *= timeUnit;
-  for (int iter=0; iter < nIters; iter+=timeUnit) {
+  for (int iter=timeUnit; iter <= nIters; iter+=timeUnit) {
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < M; j++) {
         double increment = nd(generator);
