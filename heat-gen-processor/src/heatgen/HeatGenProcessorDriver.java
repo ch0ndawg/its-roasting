@@ -40,11 +40,13 @@ public class HeatGenProcessorDriver {
 
         KafkaStreams streams = new KafkaStreams(builder, props);
         streams.start();
-
-        // usually the stream application would be running forever,
-        // in this example we just let it run for some time and stop since the input data is finite.
-       // Thread.sleep(5000L);
-
-        streams.close();
+        /* try {
+	        while (true) {
+	        // usually the stream application would be running forever,
+	        // in this example we just let it run for some time and stop since the input data is finite.
+	          Thread.sleep(5000L);
+	        }
+        } catch (InterruptedException ie) {}
+        streams.close(); */
     }
 }
