@@ -1,4 +1,4 @@
-package heatgen;
+package main.java;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
