@@ -67,6 +67,8 @@ object ItsRoastingApp  {
       timeStep(tempParallel.partitionBy(rangePartitioner) ,nsteps)
   }
   def main(args: Array[String]) {
-    simulation(100, 20, 4)
+    simulation(200 /* resolution: number of cells */,
+               100 /* time in deciframes (1/600) */,
+                 8 /* number of processes */)
   }
 }
