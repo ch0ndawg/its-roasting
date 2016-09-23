@@ -48,13 +48,14 @@ object ItsRoastingApp  {
     // TAIL recursion method, in case Spark barks at me for using "var currentTemp ="
     
     
-      val db = sc.cassandraTable("heatgen","temps")
+      // val db = sc.cassandraTable("heatgen","temps")
       //@tailrec
       def timeStep(u : org.apache.spark.rdd.RDD[(Int,Double)], niter: Int) : Unit = {
       	// WRITE u to database
         // format correctly
-      	val dbu = u map {case (i,u) => Seq(("time", nsteps - niter), ("x_coord",leftX + dx*i +dx/2.0),
-      	                                   ("y_coord",0.0), ("temp", u))
+      	val dbu = u map {
+      	  case (i,u) => Seq(("time", nsteps - niter), ("x_coord",leftX + dx*i +dx/2.0),
+      	                    ("y_coord",0.0), ("temp", u))
       	}
       	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
       
