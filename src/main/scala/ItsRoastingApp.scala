@@ -2,6 +2,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.RangePartitioner
+import com.datastax.spark.connector._
 
 object ItsRoastingApp  {
   val conf = new SparkConf().setMaster("local").setAppName("My App")
@@ -47,18 +48,23 @@ object ItsRoastingApp  {
     // TAIL recursion method, in case Spark barks at me for using "var currentTemp ="
     
     
-      // currentTemp = tempParallel.partitionBy(rangePartitioner)
+      val db = sc.cassandraTable("heatgen","temps")
       //@tailrec
       def timeStep(u : org.apache.spark.rdd.RDD[(Int,Double)], niter: Int) : Unit = {
       	// WRITE u to database
-      	u.collect().foreach(println)
-      	
-        val newStreamingData = Vector[Double]() // Kafka stream
+        // format correctly
+      	val dbu = u map {case (i,u) => Seq(("time", nsteps - niter), ("x_coord",leftX + dx*i +dx/2.0),
+      	                                   ("y_coord",0.0), ("temp", u))
+      	}
+      	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
+      
+      	// compute next timestep
+        val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
         val stencilParts = u.flatMap(stencil(_,newStreamingData))
         val newU = stencilParts.reduceByKey(_+_)
         // Possibly set up a new Range Partitioner for it here
-        if (niter > 0) timeStep(newU, niter-1)
-        else newU.collect().foreach(println) //WRITE newTemp to database
+        if (niter > 0) timeStep(newU.partitionBy(rangePartitioner), niter-1)
+        else newU.collect().foreach(println) //WRITE newTemp to database or just print
       }
       timeStep(tempParallel.partitionBy(rangePartitioner) ,nsteps)
   }
