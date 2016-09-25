@@ -58,17 +58,17 @@ object ItsRoastingApp  {
       
       	// compute next timestep
         val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
-        val stencilParts = u.flatMap(stencil(_,newStreamingData))
-        val newU = stencilParts.reduceByKey(_+_)
+        val stencilParts = u flatMap (stencil(_,newStreamingData))
+        val newU = stencilParts reduceByKey (_+_)
         // Possibly set up a new Range Partitioner for it here
-        if (niter > 0) timeStep(newU/*.partitionBy(rangePartitioner)*/, niter-1)
+        if (niter > 0) timeStep(newU.partitionBy(rangePartitioner), niter-1)
         else newU.collect().foreach(println) //WRITE newTemp to database or just print
       }
-      timeStep(tempParallel/*.partitionBy(rangePartitioner)*/ ,nsteps)
+      timeStep(tempParallel.partitionBy(rangePartitioner), nsteps)
   }
   def main(args: Array[String]) {
     simulation(200 /* resolution: number of cells */,
                100 /* time in deciframes (1/600) */,
-                 8 /* number of processes */)
+                24 /* number of processes */)
   }
 }
