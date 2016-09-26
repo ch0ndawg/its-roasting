@@ -5,8 +5,9 @@ import org.apache.spark.RangePartitioner
 import com.datastax.spark.connector._
 
 object ItsRoastingApp  {
-  val conf = new SparkConf()
-  val sc = new SparkContext(conf)
+  // ALERT: This should not be hard-coded.
+  val conf = new SparkConf(true)
+  val sc = new SparkContext("spark://ip-172-31-0-74:7077","It's Roasting", conf)
   val conductivity = 1.0 // global constant
   
   def simulation(/*sc*/ ncells : Int, nsteps : Int, nprocs: Int, leftX: Double = -10.0, rightX: Double = 10.0,
