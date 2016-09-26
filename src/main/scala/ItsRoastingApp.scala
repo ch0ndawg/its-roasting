@@ -6,11 +6,9 @@ import com.datastax.spark.connector._
 
 object ItsRoastingApp  {
   // ALERT: This should not be hard-coded.
-  val conf = new SparkConf().setMaster("spark://ip-172-31-0-74:7077").setAppName("It's Roasting")
-  val sc = new SparkContext("spark://ip-172-31-0-74:7077","It's Roasting",conf)
   val conductivity = 1.0 // global constant
   
-  def simulation(/*sc*/ ncells : Int, nsteps : Int, nprocs: Int, leftX: Double = -10.0, rightX: Double = 10.0,
+  def simulation(sc: SparkContext, ncells : Int, nsteps : Int, nprocs: Int, leftX: Double = -10.0, rightX: Double = 10.0,
                sigma: Double = 3.0, ao: Double = 1.0, coeff: Double = 0.375) : Unit = {
     val dx = (rightX-leftX)/(ncells-1) // determine spatial step size
     
@@ -68,7 +66,10 @@ object ItsRoastingApp  {
       timeStep(tempParallel.partitionBy(rangePartitioner), nsteps)
   }
   def main(args: Array[String]) {
-    simulation(200 /* resolution: number of cells */,
+    val conf = new SparkConf()
+    val sc = new SparkContext(conf)
+    simulation(sc,
+               200 /* resolution: number of cells */,
                100 /* time in deciframes (1/600) */,
                 24 /* number of processes */)
   }
