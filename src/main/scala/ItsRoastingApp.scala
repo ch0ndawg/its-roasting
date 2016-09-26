@@ -4,6 +4,8 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.RangePartitioner
 import com.datastax.spark.connector._
 
+import scala.annotation.tailrec
+
 object ItsRoastingApp  {
   // ALERT: This should not be hard-coded.
   val conductivity = 1.0 // global constant
@@ -44,26 +46,22 @@ object ItsRoastingApp  {
     val tempParallel = sc.parallelize(temp)//partitionBy(new RangePartitioner(nprocs))
     val rangePartitioner = new RangePartitioner(nprocs,tempParallel)
     
-    // TAIL recursion method, in case Spark barks at me for using "var currentTemp ="
+    @tailrec
+    def timeStep(u : org.apache.spark.rdd.RDD[(Int,Double)], niter: Int) : Unit = {
+    	// WRITE u to database
+      // format correctly
+    	val dbu = u map { case (i,t) => (nsteps - niter, leftX + dx*i +dx/2.0, 0.0, t) }
+    	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
     
-    
-      // val db = sc.cassandraTable("heatgen","temps")
-      //@tailrec
-      def timeStep(u : org.apache.spark.rdd.RDD[(Int,Double)], niter: Int) : Unit = {
-      	// WRITE u to database
-        // format correctly
-      	val dbu = u map { case (i,t) => (nsteps - niter, leftX + dx*i +dx/2.0, 0.0, t) }
-      	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
-      
-      	// compute next timestep
-        val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
-        val stencilParts = u flatMap (stencil(_,newStreamingData))
-        val newU = stencilParts reduceByKey (_+_)
-        // Possibly set up a new Range Partitioner for it here
-        if (niter > 0) timeStep(newU.partitionBy(rangePartitioner), niter-1)
-        else newU.collect().foreach(println) //WRITE newTemp to database or just print
-      }
-      timeStep(tempParallel.partitionBy(rangePartitioner), nsteps)
+    	// compute next timestep
+      val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
+      val stencilParts = u flatMap (stencil(_,newStreamingData))
+      val newU = stencilParts reduceByKey (_+_)
+      // Possibly set up a new Range Partitioner for it here
+      if (niter > 0) timeStep(newU.partitionBy(rangePartitioner), niter-1)
+      else newU.collect().foreach(println) //WRITE newTemp to database or just print
+    }
+    timeStep(tempParallel.partitionBy(rangePartitioner), nsteps)
   }
   def main(args: Array[String]) {
     val conf = new SparkConf()
