@@ -5,7 +5,7 @@ import org.apache.spark.RangePartitioner
 import com.datastax.spark.connector._
 
 object ItsRoastingApp  {
-  val conf = new SparkConf().setMaster("local").setAppName("My App")
+  val conf = new SparkConf()
   val sc = new SparkContext(conf)
   val conductivity = 1.0 // global constant
   
