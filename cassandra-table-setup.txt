@@ -1,0 +1,12 @@
+CREATE KEYSPACE heatgen
+    WITH REPLICATION = {'class':'SimpleStrategy','replication_factor': 3};
+
+DROP TABLE heatgen.temps;
+
+CREATE TABLE heatgen.temps (
+        time INT,
+        x_coord DOUBLE,
+        y_coord DOUBLE,
+        temp DOUBLE,
+        PRIMARY KEY (time, x_coord, y_coord)
+      );
