@@ -69,8 +69,8 @@ object ItsRoastingApp  {
     val conf = new SparkConf()
     val sc = new SparkContext(conf)
     simulation(sc,
-               2000 /* resolution: number of cells */,
-               100 /* time in deciframes (1/600) */,
-                24 /* number of processes */)
+               args(0).toInt /* resolution: number of cells */,
+               args(1).toInt /* time in deciframes (1/600) */,
+                args(2).toInt /* number of processes */)
   }
 }
