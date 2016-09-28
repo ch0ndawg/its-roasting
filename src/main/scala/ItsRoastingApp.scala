@@ -11,7 +11,7 @@ object ItsRoastingApp  {
   val conductivity = 1.0 // global constant
   
   def simulation(sc: SparkContext, ncells : Int, nsteps : Int, nprocs: Int, leftX: Double = -10.0, rightX: Double = 10.0,
-               bottomY: Double = -10.0, topY :Double = 10.0, sigma: Double = 3.0, ao: Double = 1.0, coeff: Double = 0.375) : Unit = {
+               bottomY: Double = -10.0, topY :Double = 10.0, sigma: Double = 3.0, ao: Double = 1.0, coeff: Double = 0.1875) : Unit = {
     val dx = (rightX-leftX)/(ncells-1) // determine spatial step size
     val dy = (topY - bottomY)/(ncells-1)
     
