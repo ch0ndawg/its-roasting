@@ -19,7 +19,7 @@ object ItsRoastingApp  {
     def tempFromIdx(i: Int,j:Int) : ((Int,Int), Double)= {
       val x = leftX + dx*i +dx/2.0
       val y = bottomY + dy*j+ dy/2.0
-      ((i,j), ao*math.exp(-x*x/(2.0*sigma*sigma)))
+      ((i,j), ao*math.exp(-(x*x+y*y)/(2.0*sigma*sigma)))
     }
     // possibly replace this with ghost cells
     def interior(idx : ((Int,Int),Double) ): Boolean =
