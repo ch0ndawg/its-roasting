@@ -39,7 +39,7 @@ def heatgen(timestep):
         p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
         p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
 
-        script,div = components(plot)
+        script,div = components(p)
         return render_template('roasting.html', script=script, div=div)
 
 # @count()
