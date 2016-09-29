@@ -23,6 +23,9 @@ def gotoZero():
 
 @app.route("/heatgen/<int:timestep>")
 def heatgen(timestep):
+    global dataSource
+    global session
+
     update(timestep*100) # query the database
 
     TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
@@ -41,6 +44,9 @@ def heatgen(timestep):
     return render_template('roasting.html', script=script, div=div)
 
 def update(t):
+    global dataSource
+    global session
+
     timestep = t/100
     res = session.execute("select * from temps where time = %d" % timestep)
     row_list = list(res)
