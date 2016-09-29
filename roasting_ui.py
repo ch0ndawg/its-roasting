@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import render_template
 from cassandra.cluster import Cluster
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, Div, Column
