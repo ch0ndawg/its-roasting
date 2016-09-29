@@ -1,9 +1,9 @@
 from flask import Flask
-from flask import render_template
+from flask import render_template, redirect
 from cassandra.cluster import Cluster
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, Div, Column
-from bokeh.plotting import figure
+from bokeh.plotting import figure, curdoc
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.util.string import encode_utf8
@@ -17,7 +17,10 @@ session = Cluster().connect("heatgen")
 @app.route("/")
 def hello():
     return "Hello World!"
-
+@app.route("/heatgen/")
+def gotoZero():
+    return redirect("/heatgen/0")
+    
 @app.route("/heatgen/<int:timestep>")
 def heatgen(timestep):
     res = session.execute("select * from temps where time = %d" % timestep)
@@ -39,8 +42,12 @@ def heatgen(timestep):
 
     p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
     # p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
-    p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.75)
+    p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67)
+
+    # translate the script into JavaScript to allow for live callbacks
     script,div = components(p)
+
+    # javactript
     return render_template('roasting.html', script=script, div=div)
 
 # @count()
