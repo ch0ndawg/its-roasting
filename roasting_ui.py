@@ -12,13 +12,14 @@ import numpy as np
 
 app = Flask(__name__)
 
+session = Cluster().connect("heatgen")
+
 @app.route("/")
 def hello():
     return "Hello World!"
 
 @app.route("/heatgen/<int:timestep>")
 def heatgen(timestep):
-    session = Cluster().connect("heatgen")
     res = session.execute("select * from temps where time = %d" % timestep)
     row_list = list(res)
 
