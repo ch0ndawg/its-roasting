@@ -10,7 +10,9 @@ from bokeh.client import push_session
 import numpy as np
 
 dataSource = None
-cassSession = Cluster().connect("heatgen")
+
+#enter new server here. Shouldn't hard-code it, though, get it as input
+cassSession = Cluster(['52.89.254.215']).connect("heatgen")
 t=0
 
 def update():
@@ -54,7 +56,7 @@ p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67
 
 curdoc().add_root(p)
 
-curdoc().add_periodic_callback(update, 50)
+curdoc().add_periodic_callback(update, 17)
 curdoc().title = "Temperature Distribution"
 
 # session.loop_until_closed()
