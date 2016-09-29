@@ -8,5 +8,5 @@ CREATE TABLE heatgen.temps (
         x_coord DOUBLE,
         y_coord DOUBLE,
         temp DOUBLE,
-        PRIMARY KEY (time, x_coord, y_coord)
+	PRIMARY KEY ((time), x_coord, y_coord)
       );
