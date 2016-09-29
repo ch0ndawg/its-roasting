@@ -11,7 +11,7 @@ from bokeh.util.string import encode_utf8
 import numpy as np
 
 app = Flask(__name__)
-
+dataSource = None
 session = Cluster().connect("heatgen")
 
 @app.route("/")
@@ -20,9 +20,28 @@ def hello():
 @app.route("/heatgen/")
 def gotoZero():
     return redirect("/heatgen/0")
-    
+
 @app.route("/heatgen/<int:timestep>")
 def heatgen(timestep):
+    update(timestep*100) # query the database
+
+    TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
+
+    p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
+    # p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
+    p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67)
+
+    curdoc().add_periodic_callback(update, 100)
+    curdoc().title = "Temperature Distribution"
+
+    # translate the script into JavaScript to allow for live callbacks
+    script,div = components(p)
+
+    # javactript
+    return render_template('roasting.html', script=script, div=div)
+
+def update(t):
+    timestep = t/100
     res = session.execute("select * from temps where time = %d" % timestep)
     row_list = list(res)
 
@@ -38,24 +57,6 @@ def heatgen(timestep):
     plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
 
     dataSource = ColumnDataSource(plotInfo)
-    TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
-
-    p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
-    # p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
-    p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67)
-
-    # translate the script into JavaScript to allow for live callbacks
-    script,div = components(p)
-
-    # javactript
-    return render_template('roasting.html', script=script, div=div)
-
-# @count()
-# def update(t):
-#     source.data = compute(t)
-#
-# curdoc().add_periodic_callback(update, 100)
-# curdoc().title = "Surface3d"
 
 if __name__ == "__main__":
     app.run()
