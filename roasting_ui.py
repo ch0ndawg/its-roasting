@@ -60,9 +60,14 @@ def update(t):
      "#%02x%02x%02x" % (int(255.9*u),0,0) for u in zvals
     ]
 
-    plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
-
-    dataSource = ColumnDataSource(plotInfo)
+    if dataSource:
+        dataSource.data['x'] = xvals
+        dataSource.data['y'] = yvals
+        dataSource.data['radius'] = zvals
+        dataSource.data['colors'] = heatmap
+    else:
+        plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
+        dataSource = ColumnDataSource(plotInfo)
 
 if __name__ == "__main__":
     app.run()
