@@ -52,7 +52,7 @@ object ItsRoastingApp  {
     val tempParallel = sc.parallelize(temp)//partitionBy(new RangePartitioner(nprocs))
     val rangePartitioner = new RangePartitioner(nprocs,tempParallel)
     
-    @tailrec
+    @tailrec 
     def timeStep(u : org.apache.spark.rdd.RDD[((Int,Int),Double)], niter: Int) : Unit = {
     	// WRITE u to database
       // format correctly
