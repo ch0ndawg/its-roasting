@@ -1,7 +1,7 @@
 from cassandra.cluster import Cluster
 from bokeh.io import curdoc
 from bokeh.models import ColumnDataSource, Div, Column
-from bokeh.plotting import figure, curdoc
+from bokeh.plotting import figure, curdoc, show
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.util.string import encode_utf8
@@ -9,28 +9,23 @@ from bokeh.client import push_session
 
 import numpy as np
 
-
 dataSource = None
 cassSession = Cluster().connect("heatgen")
-update(0) # query the database
+t=0
 
-TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
-
-p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
-# p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
-p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67)
-
-curdoc().add_periodic_callback(update, 100)
-curdoc().title = "Temperature Distribution"
-
-session = push_session(curdoc())
-
-def update(t):
+def update():
     global dataSource
     global cassSession
+    global t
 
-    timestep = t/100
+    timestep = t
+    t = t+1
     res = cassSession.execute("select * from temps where time = %d" % timestep)
+    
+    if not res:
+        t=0 # loop
+        #return # pause
+
     row_list = list(res)
 
     yvals = [row_list[j].y_coord for j in range(len(row_list))];
@@ -48,7 +43,20 @@ def update(t):
     else:
         dataSource = ColumnDataSource(plotInfo)
 
-session.show(p)
-session.loop_until_closed()
 
-cassSession.shutdown()
+update() # query the database
+
+TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
+
+p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
+# p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
+p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67)
+
+curdoc().add_root(p)
+
+curdoc().add_periodic_callback(update, 50)
+curdoc().title = "Temperature Distribution"
+
+# session.loop_until_closed()
+
+#cassSession.shutdown()
