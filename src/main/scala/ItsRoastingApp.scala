@@ -56,7 +56,7 @@ object ItsRoastingApp  {
     def timeStep(u : org.apache.spark.rdd.RDD[((Int,Int),Double)], niter: Int) : Unit = {
     	// WRITE u to database
       // format correctly
-    	val dbu = u map { case ((i,j),t) => (nsteps - niter, leftX + dx*i +dx/2.0, bottomY + dy*i + dy/2.0, t) }
+    	val dbu = u map { case ((i,j),t) => (nsteps - niter, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
     	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
     
     	// COMPUTE next timestep
