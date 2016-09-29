@@ -26,14 +26,14 @@ def heatgen(timestep):
     yvals = [row_list[j].y_coord for j in range(len(row_list))];
     xvals = [row_list[j].x_coord for j in range(len(row_list))];
     zvals = [row_list[j].temp for j in range(len(row_list))];
-    maxZ = 2*max(zvals)
+    #maxZ = 2*max(zvals)
 
     heatmap = [
      "#%02x%02x%02x" % (int(255.9*u),0,0) for u in zvals
     ]
 
-    plotInfo = dict(x=xvals,y=yvals,radius=[zval/maxZ for zval in zvals],colors=heatmap)
-    
+    plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
+
     dataSource = ColumnDataSource(plotInfo)
     TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
 
