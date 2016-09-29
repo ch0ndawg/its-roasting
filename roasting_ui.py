@@ -6,11 +6,8 @@ from bokeh.plotting import figure, output_file
 from bokeh.plotting import figure
 from bokeh.resources import CDN
 from bokeh.embed import file_html
+from bokeh.util.string import encode_utf8
 
-plot = figure()
-plot.circle([1,2], [3,4])
-
-html = file_html(plot, CDN, "my plot")
 import numpy as np
 
 app = Flask(__name__)
@@ -19,11 +16,10 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
-@app.route("/heatgen/")
-
-def heatgen():
+@app.route("/heatgen/<int:timestep>")
+def heatgen(timestep):
     session = Cluster().connect("heatgen")
-    res = session.execute("select * from temps where time=20")
+    res = session.execute("select * from temps where time = %d" % timestep)
     row_list = list(res)
 
     yvals = [row_list[j].y_coord for j in range(len(row_list))];
@@ -40,8 +36,15 @@ def heatgen():
 
     p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
     p.circle(xvals,yvals,radius=0.5,fill_color=colors,fill_alpha=0.6,line_color=None)
-    show(p)
 
+    return encode_utf8(file_html(p, CDN,"Temperature at Time Step %d" % timestep))
+
+# @count()
+# def update(t):
+#     source.data = compute(t)
+#
+# curdoc().add_periodic_callback(update, 100)
+# curdoc().title = "Surface3d"
 
 if __name__ == "__main__":
     app.run()
