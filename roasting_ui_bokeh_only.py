@@ -12,7 +12,8 @@ import scipy.io as sio # no, not the Scripps Institute of Oceanography
 
 dataSource = None
 raw_colors = sio.loadmat('jet-color.mat')
-mat_colors = [list(c) for c in list(255.999*raw_colors['jet2'])]
+mat_colors = [list(c) for c in list(255.999*raw_colors['jet1024'])]
+jet_web_colors = [ "#%02x%02x%02x" % tuple(x) for x in mat_colors ]
 ncolors = len(mat_colors)*0.9999
 
 #enter new server here. Shouldn't hard-code it, though, get it as input
@@ -33,16 +34,15 @@ def update():
         #return # pause
 
     row_list = list(res)
-
+    
+    # this *could* be made much more efficient with the numpy deserializer
+    # but some mysterious stateful behavior behind the scenes prevents this
+    # from working (see branch colors-using-numpy)
     xvals = [row_list[j].x_coord for j in range(len(row_list))];
     yvals = [row_list[j].y_coord for j in range(len(row_list))];
     zvals = [row_list[j].temp for j in range(len(row_list))];
 
-    heatmap = [
-     "#%02x%02x%02x" % \
-        tuple([ int(mat_colors[int(u*ncolors)][i]) for i in range(3)]) \
-     for u in zvals
-    ]
+    heatmap = [ jet_web_colors[int(u*ncolors)] for u in zvals ]
 
 
     plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
@@ -57,7 +57,7 @@ update() # query the database
 TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
 
 p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
-p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.67)
+p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.5)
 
 curdoc().add_root(p)
 
