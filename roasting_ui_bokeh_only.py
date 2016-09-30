@@ -11,9 +11,9 @@ import numpy as np
 import scipy.io as sio # no, not the Scripps Institute of Oceanography
 
 dataSource = None
-raw_colors = sio.read('jet-color.mat')
-mat_colors = [list(c) for c in list(rawcolors['jet2'])]
-ncolors = len(mat_colors)
+raw_colors = sio.loadmat('jet-color.mat')
+mat_colors = [list(c) for c in list(255.999*raw_colors['jet2'])]
+ncolors = len(mat_colors)*0.9999
 
 #enter new server here. Shouldn't hard-code it, though, get it as input
 cassSession = Cluster(['52.89.254.215']).connect("heatgen")
@@ -39,7 +39,8 @@ def update():
     zvals = [row_list[j].temp for j in range(len(row_list))];
 
     heatmap = [
-     "#%02x%02x%02x" % [255.99*mat_colors[int(u*ncolors)][i] for i in range(3)] \
+     "#%02x%02x%02x" % \
+        tuple([ int(mat_colors[int(u*ncolors)][i]) for i in range(3)]) \
      for u in zvals
     ]
 
