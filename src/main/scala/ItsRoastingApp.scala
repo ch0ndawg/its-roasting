@@ -3,14 +3,16 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.RangePartitioner
 import com.datastax.spark.connector._
+import java.util.Random
 
 import scala.annotation.tailrec
 
 object ItsRoastingApp  {
   // ALERT: This should not be hard-coded.
   val conductivity = 1.0 // global constant
-  
-  def simulation(sc: SparkContext, ncells : Int, nsteps : Int, nprocs: Int, leftX: Double = -10.0, rightX: Double = 10.0,
+  val rng = new Random
+
+  def simulation(sc: SparkContext, ncells : Int, nsteps : Int, nprocs: Int, rateParam: Double = 1.0, probParam: Double = 0.1, leftX: Double = -10.0, rightX: Double = 10.0,
                bottomY: Double = -10.0, topY :Double = 10.0, sigma: Double = 3.0, ao: Double = 1.0, coeff: Double = 0.1875) : Unit = {
     val dx = (rightX-leftX)/(ncells-1) // determine spatial step size
     val dy = (topY - bottomY)/(ncells-1)
@@ -19,7 +21,7 @@ object ItsRoastingApp  {
     def tempFromIdx(i: Int,j:Int) : ((Int,Int), Double)= {
       val x = leftX + dx*i +dx/2.0
       val y = bottomY + dy*j+ dy/2.0
-      ((i,j), ao*math.exp(-(x*x+y*y)/(2.0*sigma*sigma)))
+      ((i,j),0.0) //ao*math.exp(-(x*x+y*y)/(2.0*sigma*sigma)))
     }
     // possibly replace this with ghost cells
     def interior(idx : ((Int,Int),Double) ): Boolean =
@@ -31,7 +33,8 @@ object ItsRoastingApp  {
       val ((i,j),u) = currentVal // REPLACE with ((i,j),item) for production, or even ((i,j,k), item) if time permits
       
       // normalized inhomogeneous term
-      val dtf = 0.0//coeff*dx*dx/k * f(i) // streaming data at timestep; coeff is k dt/dx^2
+      val dtf = if (rng.nextDouble < probParam) coeff*dx*dx/k *rateParam
+      	      	else 0.0 // streaming data at timestep; coeff is k dt/dx^2
       
       // produce the varicous increments using the stencil (this is the "matrix multiplication")
       val incrementVals = Vector(((i,j), -4*coeff*u), ((i-1,j), coeff*u), ((i+1,j), coeff*u),
@@ -76,6 +79,8 @@ object ItsRoastingApp  {
     simulation(sc,
                args(0).toInt /* resolution: number of cells */,
                args(1).toInt /* time in deciframes (1/600) */,
-               args(2).toInt /* number of processes */)
+               args(2).toInt /* number of processes */,
+	       args(3).toDouble,
+	       args(4).toDouble)
   }
 }
