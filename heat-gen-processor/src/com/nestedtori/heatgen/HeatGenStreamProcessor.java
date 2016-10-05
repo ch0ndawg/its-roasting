@@ -2,6 +2,7 @@ package com.nestedtori.heatgen;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
@@ -9,6 +10,9 @@ import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.TimeWindows;
+import com.nestedtori.heatgen.datatypes.*;
+import com.nestedtori.heatgen.serdes.*;
+import scala.Tuple2;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -18,10 +22,11 @@ public class HeatGenStreamProcessor {
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
+        Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "heatgen-processor");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
-        props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, S.getClass().getName());
         props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
         
         // timestamp conversion
@@ -37,15 +42,11 @@ public class HeatGenStreamProcessor {
         KStream<GridLocation, GenDataTime> source = builder.stream("heatgen-input");
         KTable<GridLocation, GenDataTime> pBoundaries = builder.table("partition-boundaries");
 
-       /* KTable<String, Long> counts = source
-                .flatMapValues(val ->	Arrays.asList(val.toLowerCase(Locale.getDefault()).split(" ")))	
-                .map( (key,val) -> new KeyValue<>(val, val))
-                .countByKey( "Count" ); */
         
         KTable<GridLocation, TempValTuple> windowedSource = source
         	.aggregateByKey((0,0) , (k,v,acc) -> (acc.val + v.heatgen, acc.count + 1),
         	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */))
-        	.filter((k,p) -> (p!= (0,0))
+        	.filter((k,p) -> (p.second != 0)
         	// change the windowed data into plain timestamp data
         	.map( (k,p) -> (k.key(), k.window().end(), C * p.val/p.count)) ; // should get average rate in window
        // want : table to have (location, uniform timestamp, generation data)
@@ -72,18 +73,13 @@ public class HeatGenStreamProcessor {
         	.reduceByKey(_+_)  // sum up the stencil and generation data
         	.process () // write back to state store 
 
-        newData.through("temp-output").filter((k,v) -> isBoundary(k)).to("partition-boundaries");
+        newData.through("temp-output").filter((k,v) -> isBoundary(k))
+        .map((pb,x) -> (pb + or - 1,x))
+        .to("partition-boundaries"); // may not even need to write to any other topic than partition boundaries
         
         KafkaStreams streams = new KafkaStreams(builder, props);
         streams.start();
-        /* try {
-	        while (true) {
-	        // usually the stream application would be running forever,
-	        // in this example we just let it run for some time and stop since the input data is finite.
-	          Thread.sleep(5000L);
-	        }
-        } catch (InterruptedException ie) {}
-        streams.close(); // */
+
         Runtime.getRuntime().addShutdownHook(new Thread(KafkaStreams::close));
     }
 }

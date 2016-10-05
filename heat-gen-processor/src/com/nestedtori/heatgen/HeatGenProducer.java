@@ -1,23 +1,12 @@
 package com.nestedtori.heatgen;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
+import com.nestedtori.heatgen.datatypes.GridLocation;
 
 import java.util.Properties;
 
-import org.apache.kafka.clients.producer.Partitioner;
-import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.serialization.Serdes;
-import scala.Tuple2;
 
-class HeatGenPartitioner implements Partitioner {
-	//private final List<PartitionInfo> partitionData = partitionsFor("heatgen-input");
-	public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster)
-	{
-		final int n = cluster.partitionCountForTopic("heatgen-input");
-		Tuple2<Integer,Integer> pair = (Tuple2<Integer,Integer>) key;
-		return pair._1()*n/HeatGenProducer.numCols; // partition into slices. assumes zero based indexing
-	}
-}
 
 public class HeatGenProducer {
 	static int numCols;
