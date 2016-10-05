@@ -51,22 +51,26 @@ public class HeatGenStreamProcessor {
        // want : table to have (location, uniform timestamp, generation data)
         
         KStream newData = windowedSource.outerJoin(pBoundaries, (v1,v2) -> {
-        	List<TempValTuple>
-        	if (v1 != null && v2 != null) {
-        		
-        	} else if (v1 == null) {
-        
-        	} else if (v2 == null) {
-        		
-        	} else {
-        		return 
+        	List<TempValTuple> result = new List<TempValTuple>(); // empty 
+        	if (v1 != null) {
+        		result.add(v1);
         	}
-        })
-        	.process( ) // custom processor that retrieves state store and multiplies by constant
+        	if (v2 != null) {
+        		result.add(v2);
+        	}
+        	return result;
+        }).toStream()
+        	.process(()->new Processor() {
+        				public init() {
+        					
+        				}
+        				public void process(key, value) {
+        					
+        				}
+        			}) // custom processor that retrieves state store and multiplies by constant
         	.flatMapValues ()// into list, changing nulls to empty list
         	.reduceByKey(_+_)  // sum up the stencil and generation data
         	.process () // write back to state store 
-        	.toStream();
 
         newData.through("temp-output").filter((k,v) -> isBoundary(k)).to("partition-boundaries");
         
