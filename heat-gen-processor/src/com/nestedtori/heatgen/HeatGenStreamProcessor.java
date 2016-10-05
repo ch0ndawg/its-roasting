@@ -37,18 +37,20 @@ public class HeatGenStreamProcessor {
         // setting offset reset to earliest so that we can re-run the demo code with the same pre-loaded data
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        KStreamBuilder builder = new KStreamBuilder();       
+        KStreamBuilder builder = new KStreamBuilder();
         
         KStream<GridLocation, GenDataTime> source = builder.stream("heatgen-input");
         KTable<GridLocation, GenDataTime> pBoundaries = builder.table("partition-boundaries");
 
         
-        KTable<GridLocation, TempValTuple> windowedSource = source
-        	.aggregateByKey((0,0) , (k,v,acc) -> (acc.val + v.heatgen, acc.count + 1),
-        	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */))
-        	.filter((k,p) -> (p.second != 0)
+        KTable<GridLocation, GenDataTime> windowedSource = source
+        	.aggregateByKey(()-> new Tuple2<Double,Int>(0.0,0) , (k,v,acc) -> new Tuple2<Double,Int>(acc.val + v.heatgen, acc.count + 1),
+        	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */)) // could change this to hopping for better data
+        	.filter((k,p) -> (p._2() != 0)) // average totaling over window
         	// change the windowed data into plain timestamp data
-        	.map( (k,p) -> (k.key(), k.window().end(), C * p.val/p.count)) ; // should get average rate in window
+        	.map( (k,p) -> new KeyValue<>(k.key(),
+        	     new GenDataTime(k.window().end(), C * p.val/p.count))
+        	); // should get average rate in window
        // want : table to have (location, uniform timestamp, generation data)
         
         KStream newData = windowedSource.outerJoin(pBoundaries, (v1,v2) -> {
@@ -71,7 +73,7 @@ public class HeatGenStreamProcessor {
         			}) // custom processor that retrieves state store and multiplies by constant
         	.flatMapValues ()// into list, changing nulls to empty list
         	.reduceByKey(_+_)  // sum up the stencil and generation data
-        	.process () // write back to state store 
+        	.process (); // write back to state store 
 
         newData.through("temp-output").filter((k,v) -> isBoundary(k))
         .map((pb,x) -> (pb + or - 1,x))
