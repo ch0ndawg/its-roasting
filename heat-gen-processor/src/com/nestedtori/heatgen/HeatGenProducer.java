@@ -9,7 +9,7 @@ import org.apache.kafka.common.serialization.Serdes;
 
 
 public class HeatGenProducer {
-	static int numCols;
+	public static int numCols;
 	// singleton ; number of columns is solely for the purpose of partitioning
 	// N is not necessarily consistent with the actual number as given in the data itself
 	//HeatGenProducer(int N) { numCols = N; }

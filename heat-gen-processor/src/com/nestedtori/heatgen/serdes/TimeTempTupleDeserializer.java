@@ -8,9 +8,9 @@ import java.util.Map;
 
 import org.apache.kafka.common.serialization.Deserializer;
 
-import com.nestedtori.heatgen.datatypes.GenDataTime;
+import com.nestedtori.heatgen.datatypes.TimeTempTuple;
 
-public class GenDataTimeDeserializer implements Deserializer<GenDataTime> {
+public class TimeTempTupleDeserializer implements Deserializer<TimeTempTuple> {
 	private LongDeserializer longDeserializer;
 	private DoubleDeserializer doubleDeserializer;
 	
@@ -21,7 +21,7 @@ public class GenDataTimeDeserializer implements Deserializer<GenDataTime> {
     }
 	
 	@Override
-	public GenDataTime deserialize(String topic, byte[] data) {
+	public TimeTempTuple deserialize(String topic, byte[] data) {
         if (data == null)
             return null;
 
@@ -29,7 +29,7 @@ public class GenDataTimeDeserializer implements Deserializer<GenDataTime> {
         byte[] valBytes = Arrays.copyOfRange(data, 8, 16);
         Long t = longDeserializer.deserialize(topic, timeBytes);
         Double v = doubleDeserializer.deserialize(topic, valBytes);
-        return new GenDataTime(t,v);
+        return new TimeTempTuple(t,v);
     }
 
     @Override

@@ -1,9 +1,9 @@
 package com.nestedtori.heatgen.datatypes;
 
-public class GenDataTime {
+public class TimeTempTuple {
 	public long time;
 	public double val;
-	public GenDataTime(long t, double v) {
+	public TimeTempTuple(long t, double v) {
 		time = t;
 		val = v;
 	}

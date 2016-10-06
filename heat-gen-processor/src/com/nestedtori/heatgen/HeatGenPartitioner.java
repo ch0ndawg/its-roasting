@@ -7,7 +7,7 @@ import org.apache.kafka.common.Cluster;
 import com.nestedtori.heatgen.datatypes.GridLocation;
 
 public class HeatGenPartitioner implements Partitioner {
-	int n;
+	public int n;
 	public void configure(Map<String, ?> configs) {
 		
 	}

@@ -6,9 +6,9 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.DoubleSerializer;
 import org.apache.kafka.common.serialization.Serializer;
 
-import com.nestedtori.heatgen.datatypes.GenDataTime;
+import com.nestedtori.heatgen.datatypes.TimeTempTuple;
 
-public class GenDataTimeSerializer implements Serializer<GenDataTime> {
+public class TimeTempTupleSerializer implements Serializer<TimeTempTuple> {
 	private LongSerializer longSerializer;
 	private DoubleSerializer doubleSerializer;
 	
@@ -19,7 +19,7 @@ public class GenDataTimeSerializer implements Serializer<GenDataTime> {
     }
 	
 	@Override
-	public byte[] serialize(String topic, GenDataTime data) {
+	public byte[] serialize(String topic, TimeTempTuple data) {
         if (data == null)
             return null;
 
