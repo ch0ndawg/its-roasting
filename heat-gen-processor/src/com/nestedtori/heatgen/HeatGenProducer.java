@@ -32,12 +32,13 @@ public class HeatGenProducer implements Runnable {
         Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
         Serde<TimeTempTuple> GS = Serdes.serdeFrom(new TimeTempTupleSerializer(), new TimeTempTupleDeserializer());
       
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "heatgen-processor");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
-        props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, S.getClass().getName());
-        props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, GS.getClass().getName());
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        //props.put(ProducerConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
+        //props.put(P.KEY_SERDE_CLASS_CONFIG, S.getClass().getName());
+        //props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, GS.getClass().getName());
         props.put("buffer.memory", 33554432);
+        props.put("key.serializer", "com.nestedtori.heatgen.serdes.GridLocationSerializer");
+        props.put("value.serializer", "com.nestedtori.heatgen.serdes.TimeTempTupleSerializer");
         
 		KafkaProducer<GridLocation, TimeTempTuple> producer = 
 				new KafkaProducer<GridLocation, TimeTempTuple>(props);
