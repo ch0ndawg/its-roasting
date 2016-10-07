@@ -109,7 +109,7 @@ public class HeatGenStreamProcessor {
 	        	.toStream() // change back to a stream
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
 	        	     new TimeTempTuple(k.window().end(), p._2() != 0 ? C * p._1()/p._2() : 0.0 ))
-	        	).through(streamPartitioner,"intermediate-topic"); // repartition the stream
+	        	).through(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
 	        // should get average rate in window
 	     
 	        // want : table to have (location, uniform timestamp, generation data)
