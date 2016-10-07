@@ -52,14 +52,12 @@ public class HeatGenStreamProcessor {
 		 C = (args.length < 10) ? 0.1875 : Double.parseDouble(args[9]);
       
 		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
-        Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
-        Serde<TimeTempTuple> GS = Serdes.serdeFrom(new TimeTempTupleSerializer(), new TimeTempTupleDeserializer());
-      
+        
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "heatgen-processor");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
-        props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, S.getClass().getName());
-        props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, GS.getClass().getName());
+        props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, GridLocationSerde.class);
+        props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, TimeTempTupleSerde.class);
         
         props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
         props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
@@ -84,7 +82,7 @@ public class HeatGenStreamProcessor {
 	        // consider using another topic as a state store
 	        
 	        StateStoreSupplier currentTemp = Stores.create("current")
-	        		                               .withKeys(S)
+	        		                               .withKeys(GridLocationSerde.class)
 	        		                               .withValues(Serdes.Double())
 	        		                               .persistent()
 	        		                               .build();
