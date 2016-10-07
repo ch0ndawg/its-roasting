@@ -1,6 +1,7 @@
 package com.nestedtori.heatgen;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KafkaStreams;
@@ -47,7 +48,6 @@ public class HeatGenStreamProcessor {
         Properties props = new Properties();
 		numCols  = Integer.parseInt(args[0]);
 		numRows = Integer.parseInt(args[1]);
-		numInEach = (int) (Math.ceil(numCols / (double)numPartitions) + 0.1);
 		// default should specify the parameter on the command line
 		C = (args.length < 3) ? 0.1875 : Double.parseDouble(args[2]); 
       
@@ -64,6 +64,14 @@ public class HeatGenStreamProcessor {
         // timestamp conversion
         props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, HeatGenTimestampExtractor.class.getName());
         
+        // dummy needed to get # of partitions. I don't know why streaming doesn't allow ready access to this
+        KafkaConsumer<GridLocation,TimeTempTuple> kafkaConsumer = new KafkaConsumer<GridLocation,TimeTempTuple> (props);
+
+        kafkaConsumer.close();
+
+        numPartitions = kafkaConsumer.partitionsFor("heatgen-input").size();
+		numInEach = (int) (Math.ceil(numCols / (double)numPartitions) + 0.1);
+		
         // make sure heatgen-input is copartitioned with partition-boundaries
         // consider using another topic as a state store
         
