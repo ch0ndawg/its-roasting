@@ -8,7 +8,7 @@ public class GridLocationSerde implements Serde<GridLocation> {
 	private GridLocationSerializer gls;
 	private GridLocationDeserializer glds;
 	
-	GridLocationSerde() {
+	public GridLocationSerde() {
 		gls = new GridLocationSerializer();
 		glds = new GridLocationDeserializer();
 	}

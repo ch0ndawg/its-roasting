@@ -14,7 +14,7 @@ public class TimeTempTupleDeserializer implements Deserializer<TimeTempTuple> {
 	private LongDeserializer longDeserializer;
 	private DoubleDeserializer doubleDeserializer;
 	
-	TimeTempTupleDeserializer() {
+	public TimeTempTupleDeserializer() {
         longDeserializer = new LongDeserializer();
         doubleDeserializer = new DoubleDeserializer();
 	}

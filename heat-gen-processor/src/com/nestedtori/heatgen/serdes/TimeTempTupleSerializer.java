@@ -12,7 +12,7 @@ public class TimeTempTupleSerializer implements Serializer<TimeTempTuple> {
 	private LongSerializer longSerializer;
 	private DoubleSerializer doubleSerializer;
 	
-	TimeTempTupleSerializer() {
+	public TimeTempTupleSerializer() {
 		 longSerializer = new LongSerializer();
 	     doubleSerializer = new DoubleSerializer();
 	}

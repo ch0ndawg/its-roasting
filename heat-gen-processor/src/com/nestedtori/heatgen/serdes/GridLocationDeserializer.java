@@ -8,7 +8,7 @@ import java.util.Map;
 public class GridLocationDeserializer implements Deserializer<GridLocation> {
 	private LongDeserializer longDeserializer; 
 	
-	GridLocationDeserializer() {
+	public GridLocationDeserializer() {
 		longDeserializer = new LongDeserializer();
 	}
 	public void configure(Map<String, ?> configs, boolean isKey) {

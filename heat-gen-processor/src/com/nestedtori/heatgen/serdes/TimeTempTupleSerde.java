@@ -9,7 +9,7 @@ public class TimeTempTupleSerde implements Serde<TimeTempTuple> {
 	private TimeTempTupleSerializer gls;
 	private TimeTempTupleDeserializer glds;
 	
-	TimeTempTupleSerde() {
+	public TimeTempTupleSerde() {
 		gls = new TimeTempTupleSerializer();
 		glds = new TimeTempTupleDeserializer();
 	}
