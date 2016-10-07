@@ -26,6 +26,7 @@ public class HeatGenStreamProcessor {
 	public static int numCols;
 	public static int numRows;
 	public static int numPartitions;
+	public static int numInEach;
 	public static double C; 
 	
 	public static boolean isBoundary(int i, int j) { 
@@ -33,16 +34,20 @@ public class HeatGenStreamProcessor {
 	}
 	
 	public static boolean isLeftPartitionBoundary(int k) {
-		return false;
+		if (k == 0) return false; // actual boundary of the domain doesn't count
+		return k % numInEach == 0;
 	}
 	
 	static boolean isRightPartitionBoundary(int k) {
-		return false;
+		if (k == numCols - 1) return false;
+		return k % numInEach == numInEach - 1;
 	}
     public static void main(String[] args) throws Exception {
+
         Properties props = new Properties();
 		numCols  = Integer.parseInt(args[0]);
 		numRows = Integer.parseInt(args[1]);
+		numInEach = (int) (Math.ceil(numCols / (double)numPartitions) + 0.1);
 		// default should specify the parameter on the command line
 		C = (args.length < 3) ? 0.1875 : Double.parseDouble(args[2]); 
       
@@ -130,7 +135,6 @@ public class HeatGenStreamProcessor {
         		.to(streamPartitioner, "partition-boundaries"); 
         partitionBoundaryStreams[1].map((k,v)->new KeyValue<>(new GridLocation(k.i + 1, k.j), v))
         		.to(streamPartitioner, "partition-boundaries"); 
-        
         
         KafkaStreams streams = new KafkaStreams(builder, props);
         streams.start();
