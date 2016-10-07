@@ -52,8 +52,8 @@ public class HeatGenStreamProcessor {
 		 C = (args.length < 10) ? 0.1875 : Double.parseDouble(args[9]);
       
 		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
-        Serde<GridLocation> S = Serdes.serdeFrom(GridLocationSerializer.class, GridLocationDeserializer.class);
-        Serde<TimeTempTuple> GS = Serdes.serdeFrom(TimeTempTupleSerializer.class, TimeTempTupleDeserializer.class);
+        Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
+        Serde<TimeTempTuple> GS = Serdes.serdeFrom(new TimeTempTupleSerializer(), new TimeTempTupleDeserializer());
       
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "heatgen-processor");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
