@@ -11,6 +11,10 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.processor.StateStoreSupplier;
+import org.apache.kafka.streams.processor.ProcessorSupplier;
+import org.apache.kafka.streams.processor.Processor;
+import org.apache.kafka.streams.kstream.TransformerSupplier;
+import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.state.Stores;
 
 import com.nestedtori.heatgen.datatypes.*;
@@ -18,6 +22,8 @@ import com.nestedtori.heatgen.serdes.*;
 import scala.Tuple2;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -25,7 +31,9 @@ public class HeatGenStreamProcessor {
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
+		final int numCols = Integer.parseInt(args[0]);
       
+		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
         Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
         Serde<TimeTempTuple> GS = Serdes.serdeFrom(new TimeTempTupleSerializer(), new TimeTempTupleDeserializer());
       
@@ -33,7 +41,7 @@ public class HeatGenStreamProcessor {
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
         props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, S.getClass().getName());
-        props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, GS.getClass().getName());
         
         // timestamp conversion
         props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, HeatGenTimestampExtractor.class.getName());
@@ -43,7 +51,7 @@ public class HeatGenStreamProcessor {
         
         StateStoreSupplier currentTemp = Stores.create("current")
         		                               .withKeys(S.getClass())
-        		                               .withValues(GS.getClass())
+        		                               .withValues(Serdes.Double())
         		                               .persistent()
         		                               .build();
         
@@ -68,39 +76,52 @@ public class HeatGenStreamProcessor {
         	); // should get average rate in window
        // want : table to have (location, uniform timestamp, generation data)
         
-        KStream newData = windowedSource.outerJoin(pBoundaries, (v1,v2) -> {
-        	List<TimeTempTuple> result = new List<TimeTempTuple>(); // empty 
+        KStream<GridLocation, List<TimeTempTuple>> inclBoundaries = windowedSource.outerJoin(pBoundaries, (v1,v2) -> {
+        	List<TimeTempTuple> result = new ArrayList<TimeTempTuple>(); // empty 
         	if (v1 != null) {
         		result.add(v1);
         	}
         	if (v2 != null) {
-        		result.add(v2);
+        		result.add(new TimeTempTuple(v2.time,C*v2.val)); // C is coeff
         	}
         	return result;
-        })
-    	.toStream()
-    	.process(
-    		() ->new Processor() {
-    				private KeyValueStore<GridLocation, TimeTempTuple> kvStore;
-    				
-    				@Override
-    				@SuppressWarnings("unchecked")
-    				public init(ProcessorContext context) {
-    					kvStore = (KeyValueStore) context.getStateStore("current");
-    				}
-    				
-    				@Override
-    				public void process(GridLocation key, List<TimeTempTuple> value) {
-    					
-    				}
+        }).toStream();
+        
+        // so far: each gridLocation should contain either
+        // a list singleton of heat generation data, and in the boundary case,
+        // both the singleton and the previous result
+        
+        // 
+    	inclBoundaries.transform(
+    			// ok I REALLY should rewrite this in Scala
+    		new TransformerSupplier<GridLocation,List<TimeTempTuple>,
+    		KeyValue<GridLocation,List<TimeTempTuple>>>() {
+    			@SuppressWarnings("unchecked")
+    			public Transformer<GridLocation,List<TimeTempTuple>,
+    			KeyValue<GridLocation,List<TimeTempTuple> >> get()
+    			{
+    				return new CurrentTempTransformer();
+    			}
     		}, "current") // custom processor that retrieves state store and multiplies by constant
-    	.flatMapValues ()// into list, changing nulls to empty list
-    	.reduceByKey((a,b) -> a+b)  // sum up the stencil and generation data
-    	.process (() -> /* complicated stuff to write to state*/, "current") // write back to state store 
+    	.flatMapValues((List<TimeTempTuple> value) -> value) // a.k.a concatenate; it's already a list!
+    	.reduceByKey((a,b) -> new TimeTempTuple(Math.max(a.time, b.time), a.val+b.val))  // sum up the stencil and generation data
+    	.process (() -> new Processor() {
+    		private KeyValueStore<GridLocation, TimeTempTuple> kvStore;
+			
+			@Override
+			@SuppressWarnings("unchecked")
+			public init(ProcessorContext context) {
+				kvStore = (KeyValueStore) context.getStateStore("current");
+			}
+    		@Override
+			public void process(GridLocation key, List<TimeTempTuple> value) {
+    			
+    		}
+    	}, "current") // write back to state store 
 
         .through("temp-output").filter((k,v) -> isBoundary(k))
-        .map((pb,x) -> (pb + or - 1,x))
-        .to(HeatGenStreamPartitioner, "partition-boundaries"); // may not even need to write to any other topic than partition boundaries
+        //.map((pb,x) -> (pb + or - 1,x))
+        .to(streamPartitioner, "partition-boundaries"); // may not even need to write to any other topic than partition boundaries
         
         KafkaStreams streams = new KafkaStreams(builder, props);
         streams.start();
