@@ -12,10 +12,14 @@ public class TimeTempTupleSerializer implements Serializer<TimeTempTuple> {
 	private LongSerializer longSerializer;
 	private DoubleSerializer doubleSerializer;
 	
+	TimeTempTupleSerializer() {
+		 longSerializer = new LongSerializer();
+	     doubleSerializer = new DoubleSerializer();
+	}
+	
 	@Override
     public void configure(Map<String, ?> configs, boolean isKey) {
-        longSerializer = new LongSerializer();
-        doubleSerializer = new DoubleSerializer();
+       
     }
 	
 	@Override

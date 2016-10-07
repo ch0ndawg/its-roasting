@@ -9,9 +9,10 @@ public class GridLocationSerializer implements Serializer<GridLocation> {
 
 	private LongSerializer longSerializer;
 	
+	GridLocationSerializer() {  longSerializer = new LongSerializer(); }
 	@Override
     public void configure(Map<String, ?> configs, boolean isKey) {
-        longSerializer = new LongSerializer();
+       
     }
 	
 	@Override

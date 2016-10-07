@@ -14,10 +14,12 @@ public class TimeTempTupleDeserializer implements Deserializer<TimeTempTuple> {
 	private LongDeserializer longDeserializer;
 	private DoubleDeserializer doubleDeserializer;
 	
-	@Override
-    public void configure(Map<String, ?> configs, boolean isKey) {
+	TimeTempTupleDeserializer() {
         longDeserializer = new LongDeserializer();
         doubleDeserializer = new DoubleDeserializer();
+	}
+	@Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
     }
 	
 	@Override

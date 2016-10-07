@@ -8,14 +8,17 @@ public class GridLocationSerde implements Serde<GridLocation> {
 	private GridLocationSerializer gls;
 	private GridLocationDeserializer glds;
 	
-	public void configure(Map<String, ?> configs, boolean isKey) {
+	GridLocationSerde() {
 		gls = new GridLocationSerializer();
 		glds = new GridLocationDeserializer();
+	}
+	
+	public void configure(Map<String, ?> configs, boolean isKey) {
+
 	}
 	
 	public GridLocationSerializer serializer() { return gls; }
 	public GridLocationDeserializer deserializer() { return glds; }
 	
 	public void close() {}
-	
 }

@@ -7,8 +7,11 @@ import java.util.Map;
 
 public class GridLocationDeserializer implements Deserializer<GridLocation> {
 	private LongDeserializer longDeserializer; 
-	public void configure(Map<String, ?> configs, boolean isKey) {
+	
+	GridLocationDeserializer() {
 		longDeserializer = new LongDeserializer();
+	}
+	public void configure(Map<String, ?> configs, boolean isKey) {
 	}
 
 	public GridLocation deserialize(String topic, byte[] data) {

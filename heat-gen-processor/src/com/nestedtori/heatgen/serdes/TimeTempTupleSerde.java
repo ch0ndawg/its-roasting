@@ -9,9 +9,12 @@ public class TimeTempTupleSerde implements Serde<TimeTempTuple> {
 	private TimeTempTupleSerializer gls;
 	private TimeTempTupleDeserializer glds;
 	
-	public void configure(Map<String, ?> configs, boolean isKey) {
+	TimeTempTupleSerde() {
 		gls = new TimeTempTupleSerializer();
 		glds = new TimeTempTupleDeserializer();
+	}
+	public void configure(Map<String, ?> configs, boolean isKey) {
+	
 	}
 	
 	public TimeTempTupleSerializer serializer() { return gls; }
