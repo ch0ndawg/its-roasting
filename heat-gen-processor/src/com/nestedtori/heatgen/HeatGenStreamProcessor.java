@@ -8,14 +8,8 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.processor.StateStoreSupplier;
-import org.apache.kafka.streams.processor.ProcessorSupplier;
-import org.apache.kafka.streams.processor.Processor;
-import org.apache.kafka.streams.kstream.TransformerSupplier;
-import org.apache.kafka.streams.kstream.Transformer;
-import org.apache.kafka.streams.kstream.ValueJoiner;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.state.Stores;
 
@@ -23,23 +17,26 @@ import com.nestedtori.heatgen.datatypes.*;
 import com.nestedtori.heatgen.serdes.*;
 import scala.Tuple2;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Properties;
 import java.lang.Thread;
 
 public class HeatGenStreamProcessor {
-	static int numCols;
-	static int numRows;
-	static int numPartitions;
+	public static int numCols;
+	public static int numRows;
+	public static int numPartitions;
+	public static double C; 
 	
-	static boolean isBoundary(int i, int j) { 
+	public static boolean isBoundary(int i, int j) { 
 		return i == 0 || i == numCols - 1 || j ==0 || j == numRows - 1 ;
 	}
 	
-	static boolean isPartitionBoundary(int k) {
+	public static boolean isLeftPartitionBoundary(int k) {
+		return false;
+	}
+	
+	static boolean isRightPartitionBoundary(int k) {
 		return false;
 	}
     public static void main(String[] args) throws Exception {
@@ -47,7 +44,7 @@ public class HeatGenStreamProcessor {
 		numCols  = Integer.parseInt(args[0]);
 		numRows = Integer.parseInt(args[1]);
 		// default should specify the parameter on the command line
-		final double C = (args.length < 3) ? 0.1875 : Double.parseDouble(args[2]); 
+		C = (args.length < 3) ? 0.1875 : Double.parseDouble(args[2]); 
       
 		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
         Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
@@ -87,13 +84,13 @@ public class HeatGenStreamProcessor {
         			// sum up multiple occurrences, if necessary
         	(k,v,acc) -> new Tuple2<Double,Integer>(acc._1() + v.val, acc._2() + 1),
         	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */)) // could change this to hopping for better data
-        	.filter((k,p) -> (p._2() != 0)) // average totaling over window
         	// change the windowed data into plain timestamp data
         	.toStream() // change back to a stream
         	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
-        	     new TimeTempTuple(k.window().end(), C * p._1()/p._2()))
+        	     new TimeTempTuple(k.window().end(), p._2() != 0 ? C * p._1()/p._2() : 0.0 ))
         	); // should get average rate in window
-       // want : table to have (location, uniform timestamp, generation data)
+     
+        // want : table to have (location, uniform timestamp, generation data)
         
         KStream<GridLocation, List<TimeTempTuple>> inclBoundaries = windowedSource
         		.outerJoin( pBoundaries,
@@ -122,10 +119,18 @@ public class HeatGenStreamProcessor {
     	.toStream().map ( (k,p) -> new KeyValue<>(k.key(),p)) // remove the window key
     	.transform ( ()-> new NewTempSaver(), "current"); // write back to state store 
 
-    	// as of now, it should contain 
-        newTemp.through("temp-output").filter((k,v) -> isPartitionBoundary(k.i))
-        //.map((pb,x) -> (pb + or - 1,x))
-        .to(streamPartitioner, "partition-boundaries"); // may not even need to write to any other topic than partition boundaries
+    	// as of now, newTemp should contain the new temperature values indexed by key
+    	
+    	KStream<GridLocation,TimeTempTuple>[] partitionBoundaryStreams =  
+        newTemp.through("temp-output").branch((k,v) -> isLeftPartitionBoundary(k.i),
+        		(k,v) -> isRightPartitionBoundary(k.i));
+        
+    	
+        partitionBoundaryStreams[0].map((k,v)->new KeyValue<>(new GridLocation(k.i - 1, k.j), v))
+        		.to(streamPartitioner, "partition-boundaries"); 
+        partitionBoundaryStreams[1].map((k,v)->new KeyValue<>(new GridLocation(k.i + 1, k.j), v))
+        		.to(streamPartitioner, "partition-boundaries"); 
+        
         
         KafkaStreams streams = new KafkaStreams(builder, props);
         streams.start();
