@@ -82,7 +82,7 @@ public class HeatGenStreamProcessor {
 	        // consider using another topic as a state store
 	        
 	        StateStoreSupplier currentTemp = Stores.create("current")
-	        		                               .withKeys(GridLocationSerde.class)
+	        		                               .withKeys(new GridLocationSerde())
 	        		                               .withValues(Serdes.Double())
 	        		                               .persistent()
 	        		                               .build();
