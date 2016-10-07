@@ -61,6 +61,9 @@ public class HeatGenStreamProcessor {
         props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, S.getClass().getName());
         props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, GS.getClass().getName());
         
+        props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
+        props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
+        
         // timestamp conversion
         props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, HeatGenTimestampExtractor.class.getName());
         
