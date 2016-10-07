@@ -8,17 +8,18 @@ import org.apache.kafka.streams.processor.ProcessorContext;
 
 
 public class NewTempSaver extends AbstractProcessor<GridLocation,TimeTempTuple> {
-	private KeyValueStore<GridLocation, TimeTempTuple> kvStore;
+	private KeyValueStore<GridLocation, Double> kvStore;
 	
 	@Override
 	@SuppressWarnings("unchecked")
 	public void init(ProcessorContext context) {
 		super.init(context);
-		kvStore = (KeyValueStore<GridLocation, TimeTempTuple>) context.getStateStore("current");
+		kvStore = (KeyValueStore<GridLocation, Double>) context.getStateStore("current");
 	}
 	
 	@Override
 	public void process(GridLocation key, TimeTempTuple value) {
+		kvStore.put(key, value.val);
 		context().forward(key, value); // forward k,v as is
 	}
 	

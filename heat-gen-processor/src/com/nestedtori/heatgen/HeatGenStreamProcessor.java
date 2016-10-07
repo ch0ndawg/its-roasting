@@ -15,6 +15,8 @@ import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.processor.Processor;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.kstream.Transformer;
+import org.apache.kafka.streams.kstream.ValueJoiner;
+import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.state.Stores;
 
 import com.nestedtori.heatgen.datatypes.*;
@@ -26,12 +28,20 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Properties;
+import java.lang.Thread;
 
 public class HeatGenStreamProcessor {
-
+	static int numCols;
+	static int numPartitions;
+	
+	static boolean isBoundary(int k) { 
+		return false;
+	}
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
-		final int numCols = Integer.parseInt(args[0]);
+		numCols  = Integer.parseInt(args[0]);
+		// default should specify the parameter on the command line
+		final double C = (args.length < 2) ? 0.1875 : Double.parseDouble(args[1]); 
       
 		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
         Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
@@ -63,29 +73,35 @@ public class HeatGenStreamProcessor {
         builder.addStateStore(currentTemp);
         
         KStream<GridLocation, TimeTempTuple> source = builder.stream("heatgen-input");
-        KTable<GridLocation, TimeTempTuple> pBoundaries = builder.table("partition-boundaries");
+        KStream<GridLocation, TimeTempTuple> pBoundaries = builder.stream("partition-boundaries");
 
         
-        KTable<GridLocation, TimeTempTuple> windowedSource = source
-        	.aggregateByKey(() -> new Tuple2<Double,Int>(0.0,0) , (k,v,acc) -> new Tuple2<Double,Int>(acc.val + v.heatgen, acc.count + 1),
+        KStream<GridLocation, TimeTempTuple> windowedSource = source
+        	.aggregateByKey(() -> new Tuple2<Double,Integer>(0.0,0),
+        			// sum up multiple occurrences, if necessary
+        	(k,v,acc) -> new Tuple2<Double,Integer>(acc._1() + v.val, acc._2() + 1),
         	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */)) // could change this to hopping for better data
         	.filter((k,p) -> (p._2() != 0)) // average totaling over window
         	// change the windowed data into plain timestamp data
-        	.map( (k,p) -> new KeyValue<>(k.key(),
-        	     new TimeTempTuple(k.window().end(), C * p.val/p.count))
+        	.toStream() // change back to a stream
+        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
+        	     new TimeTempTuple(k.window().end(), C * p._1()/p._2()))
         	); // should get average rate in window
        // want : table to have (location, uniform timestamp, generation data)
         
-        KStream<GridLocation, List<TimeTempTuple>> inclBoundaries = windowedSource.outerJoin(pBoundaries, (v1,v2) -> {
-        	List<TimeTempTuple> result = new ArrayList<TimeTempTuple>(); // empty 
-        	if (v1 != null) {
-        		result.add(v1);
-        	}
-        	if (v2 != null) {
-        		result.add(new TimeTempTuple(v2.time,C*v2.val)); // C is coeff
-        	}
-        	return result;
-        }).toStream();
+        KStream<GridLocation, List<TimeTempTuple>> inclBoundaries = windowedSource
+        		.outerJoin( pBoundaries,
+        		 (v1, v2) -> {
+        		List<TimeTempTuple> result = new ArrayList<TimeTempTuple>(); // empty 
+        		if (v1 != null) {
+        			result.add(v1);
+        		}
+        		if (v2 != null) {
+        			result.add(new TimeTempTuple(v2.time,C*v2.val)); // C is coeff
+        		}
+        		return result;
+        	},
+        JoinWindows.of("boundary-join").before(100 /* millisecond */));
         
         // so far: each gridLocation should contain either
         // a list singleton of heat generation data, and in the boundary case,
@@ -93,39 +109,25 @@ public class HeatGenStreamProcessor {
         
         // 
     	inclBoundaries.transform(
-    			// ok I REALLY should rewrite this in Scala
-    		new TransformerSupplier<GridLocation,List<TimeTempTuple>,
-    		KeyValue<GridLocation,List<TimeTempTuple>>>() {
-    			@SuppressWarnings("unchecked")
-    			public Transformer<GridLocation,List<TimeTempTuple>,
-    			KeyValue<GridLocation,List<TimeTempTuple> >> get()
-    			{
-    				return new CurrentTempTransformer();
-    			}
-    		}, "current") // custom processor that retrieves state store and multiplies by constant
-    	.flatMapValues((List<TimeTempTuple> value) -> value) // a.k.a concatenate; it's already a list!
-    	.reduceByKey((a,b) -> new TimeTempTuple(Math.max(a.time, b.time), a.val+b.val))  // sum up the stencil and generation data
-    	.process (() -> new Processor() {
-    		private KeyValueStore<GridLocation, TimeTempTuple> kvStore;
-			
-			@Override
-			@SuppressWarnings("unchecked")
-			public init(ProcessorContext context) {
-				kvStore = (KeyValueStore) context.getStateStore("current");
-			}
-    		@Override
-			public void process(GridLocation key, List<TimeTempTuple> value) {
-    			
+    			 () -> new CurrentTempTransformer()
+    		, "current") // custom processor that retrieves state store and multiplies by constant
+    	.flatMapValues(value -> value) // a.k.a concatenate; it's already a list!
+    	.reduceByKey((a,b) -> new TimeTempTuple(Math.max(a.time, b.time), a.val+b.val),
+    			TimeWindows.of("Reductions", 100 /* milliseconds */))  // sum up the stencil and generation data
+    	.toStream().map ( (k,p) -> new KeyValue<>(k.key(),p)) // remove the window key
+    	.process (new ProcessorSupplier<GridLocation, TimeTempTuple> () {
+    		public NewTempSaver get() {
+    			return new NewTempSaver();
     		}
-    	}, "current") // write back to state store 
+    	}, "current"); // write back to state store 
 
-        .through("temp-output").filter((k,v) -> isBoundary(k))
+        inclBoundaries.through("temp-output").filter((k,v) -> isBoundary(k))
         //.map((pb,x) -> (pb + or - 1,x))
         .to(streamPartitioner, "partition-boundaries"); // may not even need to write to any other topic than partition boundaries
         
         KafkaStreams streams = new KafkaStreams(builder, props);
         streams.start();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(KafkaStreams::close));
+        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
 }

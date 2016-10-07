@@ -12,12 +12,12 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.processor.ProcessorContext;
 
 public class CurrentTempTransformer implements Transformer<GridLocation,List<TimeTempTuple>,KeyValue<GridLocation,List<TimeTempTuple> >> {
-		private KeyValueStore<GridLocation, TimeTempTuple> kvStore;
+		private KeyValueStore<GridLocation, Double> kvStore;
 		
 		@Override
 		@SuppressWarnings("unchecked")
 		public void init(ProcessorContext context) {
-			kvStore = (KeyValueStore<GridLocation, TimeTempTuple>) context.getStateStore("current");
+			kvStore = (KeyValueStore<GridLocation, Double>) context.getStateStore("current");
 		}
 		
 		@Override
