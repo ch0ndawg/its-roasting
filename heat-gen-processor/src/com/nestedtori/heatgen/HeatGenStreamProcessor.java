@@ -3,7 +3,6 @@ package com.nestedtori.heatgen;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
@@ -16,7 +15,6 @@ import org.apache.kafka.streams.state.Stores;
 
 import com.nestedtori.heatgen.datatypes.*;
 import com.nestedtori.heatgen.serdes.*;
-import scala.Tuple2;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -99,14 +97,14 @@ public class HeatGenStreamProcessor {
 	
 	        
 	        KStream<GridLocation, TimeTempTuple> windowedSource = source
-	        	.aggregateByKey(() -> new Tuple2<Double,Integer>(0.0,0),
+	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
-	        	(k,v,acc) -> new Tuple2<Double,Integer>(acc._1() + v.val, acc._2() + 1),
+	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 , acc.val + v.val),
 	        	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */)) // could change this to hopping for better data
 	        	// change the windowed data into plain timestamp data
 	        	.toStream() // change back to a stream
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
-	        	     new TimeTempTuple(k.window().end(), p._2() != 0 ? C * p._1()/p._2() : 0.0 ))
+	        	     new TimeTempTuple(k.window().end(), p.time != 0 ? C * p.val/p.time : 0.0 ))
 	        	).through(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
 	        // should get average rate in window
 	     
