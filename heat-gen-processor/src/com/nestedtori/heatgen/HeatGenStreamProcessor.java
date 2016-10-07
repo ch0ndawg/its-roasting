@@ -70,11 +70,11 @@ public class HeatGenStreamProcessor {
         // dummy needed to get # of partitions. I don't know why streaming doesn't allow ready access to this
         KafkaConsumer<GridLocation,TimeTempTuple> kafkaConsumer = new KafkaConsumer<GridLocation,TimeTempTuple> (props);
 
-        kafkaConsumer.close();
-
         numPartitions = kafkaConsumer.partitionsFor("heatgen-input").size();
 		numInEach = (int) (Math.ceil(numCols / (double)numPartitions) + 0.1);
 		
+        kafkaConsumer.close();
+        
 		if (Integer.parseInt(args[0]) == 0) { // if zero, start the producer
 			HeatGenProducer hgp = new HeatGenProducer(args);
 			(new Thread(hgp)).start();
