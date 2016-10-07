@@ -32,16 +32,22 @@ import java.lang.Thread;
 
 public class HeatGenStreamProcessor {
 	static int numCols;
+	static int numRows;
 	static int numPartitions;
 	
-	static boolean isBoundary(int k) { 
+	static boolean isBoundary(int i, int j) { 
+		return i == 0 || i == numCols - 1 || j ==0 || j == numRows - 1 ;
+	}
+	
+	static boolean isPartitionBoundary(int k) {
 		return false;
 	}
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
 		numCols  = Integer.parseInt(args[0]);
+		numRows = Integer.parseInt(args[1]);
 		// default should specify the parameter on the command line
-		final double C = (args.length < 2) ? 0.1875 : Double.parseDouble(args[1]); 
+		final double C = (args.length < 3) ? 0.1875 : Double.parseDouble(args[2]); 
       
 		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
         Serde<GridLocation> S = Serdes.serdeFrom(new GridLocationSerializer(), new GridLocationDeserializer());
@@ -101,27 +107,23 @@ public class HeatGenStreamProcessor {
         		}
         		return result;
         	},
-        JoinWindows.of("boundary-join").before(100 /* millisecond */));
+        JoinWindows.of("boundary-join").before(100 /* milliseconds */));
         
         // so far: each gridLocation should contain either
         // a list singleton of heat generation data, and in the boundary case,
         // both the singleton and the previous result
         
-        // 
-    	inclBoundaries.transform(
-    			 () -> new CurrentTempTransformer()
-    		, "current") // custom processor that retrieves state store and multiplies by constant
+    	KStream<GridLocation, TimeTempTuple> newTemp = inclBoundaries.transform(
+    			 () -> new CurrentTempTransformer() // the most important part!
+    		, "current") // custom transformer that retrieves state store and multiplies by constant
     	.flatMapValues(value -> value) // a.k.a concatenate; it's already a list!
     	.reduceByKey((a,b) -> new TimeTempTuple(Math.max(a.time, b.time), a.val+b.val),
     			TimeWindows.of("Reductions", 100 /* milliseconds */))  // sum up the stencil and generation data
     	.toStream().map ( (k,p) -> new KeyValue<>(k.key(),p)) // remove the window key
-    	.process (new ProcessorSupplier<GridLocation, TimeTempTuple> () {
-    		public NewTempSaver get() {
-    			return new NewTempSaver();
-    		}
-    	}, "current"); // write back to state store 
+    	.transform ( ()-> new NewTempSaver(), "current"); // write back to state store 
 
-        inclBoundaries.through("temp-output").filter((k,v) -> isBoundary(k))
+    	// as of now, it should contain 
+        newTemp.through("temp-output").filter((k,v) -> isPartitionBoundary(k.i))
         //.map((pb,x) -> (pb + or - 1,x))
         .to(streamPartitioner, "partition-boundaries"); // may not even need to write to any other topic than partition boundaries
         
