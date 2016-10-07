@@ -17,13 +17,15 @@ import org.apache.kafka.streams.StreamsConfig;
 
 import java.util.Random;
 
-public class HeatGenProducer {
+public class HeatGenProducer implements Runnable {
 	public static int numCols;
 	public static int numRows;
+	public String[] args;
 	// singleton ; number of columns is solely for the purpose of partitioning
 	// N is not necessarily consistent with the actual number as given in the data itself
 	//HeatGenProducer(int N) { numCols = N; }
-	public static void main(String[] args) {
+	public HeatGenProducer(String[] args) { this.args = args; }
+	public void run() {
 		Properties props = new Properties();
 		
 		props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, HeatGenPartitioner.class.getName());
@@ -42,16 +44,16 @@ public class HeatGenProducer {
 		
 		Random rng = new Random();
 		
-		numCols = Integer.parseInt(args[0]);
-		numRows = Integer.parseInt(args[1]);
-		double rateParam = Double.parseDouble(args[2]);
-		double probParam = Double.parseDouble(args[3]);
-		double leftX = (args.length >= 5)? -10.0 : Double.parseDouble(args[4]);
-		double rightX = (args.length >= 6)? 10.0 : Double.parseDouble(args[5]);
-		double bottomY =(args.length >= 7)? -10.0 : Double.parseDouble(args[6]);
-		double topY = (args.length >= 8)? 10.0 : Double.parseDouble(args[7]);
+		numCols = Integer.parseInt(args[1]);
+		numRows = Integer.parseInt(args[2]);
+		double rateParam = Double.parseDouble(args[3]);
+		double probParam = Double.parseDouble(args[4]);
+		double leftX = (args.length < 6)? -10.0 : Double.parseDouble(args[5]);
+		double rightX = (args.length < 7)? 10.0 : Double.parseDouble(args[6]);
+		double bottomY =(args.length < 8)? -10.0 : Double.parseDouble(args[7]);
+		double topY = (args.length < 9)? 10.0 : Double.parseDouble(args[8]);
 		double sigma = 3.0;
-		double C = 0.1875;
+		double C = (args.length < 10) ? 0.1875: Double.parseDouble(args[9]);
 		
 		double dx  = (rightX - leftX)/(numCols-1);
 		double dy = (topY - bottomY)/(numCols-1);
