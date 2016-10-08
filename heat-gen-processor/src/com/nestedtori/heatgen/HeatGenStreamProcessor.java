@@ -82,7 +82,7 @@ public class HeatGenStreamProcessor {
 	        StateStoreSupplier currentTemp = Stores.create("current")
 	        		                               .withKeys(new GridLocationSerde())
 	        		                               .withValues(Serdes.Double())
-	        		                               .persistent()
+	        		                               .inMemory()
 	        		                               .build();
 	        
 	        // setting offset reset to earliest so that we can re-run the demo code with the same pre-loaded data
