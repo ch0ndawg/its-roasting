@@ -42,7 +42,6 @@ public class HeatGenStreamProcessor {
 		return k % numInEach == numInEach - 1;
 	}
     public static void main(String[] args) throws Exception {
-
         Properties props = new Properties();
 		numCols  = Integer.parseInt(args[1]);
 		numRows = Integer.parseInt(args[2]);
@@ -106,7 +105,7 @@ public class HeatGenStreamProcessor {
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
 	        	     new TimeTempTuple(k.window().end(), p.time != 0 ? C * p.val/p.time : 0.0 ))
 	        	).through(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
-	        // should get average rate in window
+	        // should get average rate in window, and all timestamps should be standardized!
 	     
 	        // want : table to have (location, uniform timestamp, generation data)
 	        
@@ -122,18 +121,25 @@ public class HeatGenStreamProcessor {
 	        		}
 	        		return result;
 	        	},
-	        JoinWindows.of("boundary-join").before(100 /* milliseconds */));
+	        JoinWindows.of("boundary-join").before(110 /* milliseconds */));
+	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
 	        // a list singleton of heat generation data, and in the boundary case,
 	        // both the singleton and the previous result
 	        
-	    	KStream<GridLocation, TimeTempTuple> newTemp = inclBoundaries.transform(
-	    			 () -> new CurrentTempTransformer() // the most important part!
-	    		, "current") // custom transformer that retrieves state store and multiplies by constant
+	    	KStream<GridLocation, TimeTempTuple> newTemp = inclBoundaries
+	    	// the most important part:
+	    	// a custom transformer that retrieves current values in a state store,
+	    	// computes the stencil (4 nearest neighbors), multiplied by the appropriate constant
+	    	.transform(
+	    			 () -> new CurrentTempTransformer() 
+	    		, "current")
 	    	.flatMapValues(value -> value) // a.k.a concatenate; it's already a list!
+	    	// sum up the stencil and generation data
 	    	.reduceByKey((a,b) -> new TimeTempTuple(Math.max(a.time, b.time), a.val+b.val),
-	    			TimeWindows.of("Reductions", 100 /* milliseconds */))  // sum up the stencil and generation data
+	    			TimeWindows.of("Reductions", 100 /* milliseconds */))
+
 	    	.toStream().map ( (k,p) -> new KeyValue<>(k.key(),p)) // remove the window key
 	    	.transform ( ()-> new NewTempSaver(), "current"); // write back to state store 
 	
