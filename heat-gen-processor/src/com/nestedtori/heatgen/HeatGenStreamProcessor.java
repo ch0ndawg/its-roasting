@@ -132,12 +132,12 @@ public class HeatGenStreamProcessor {
 	    	.transform(
 	    			 () -> new CurrentTempTransformer() 
 	    		, "current")
-	    	.transform(() -> new NewTempSaver(), "current" );
+	    	.transform(() -> new NewTempSaver(), "current");
 	
 	    	// as of now, newTemp should contain the new temperature values indexed by key
 	    	
 	    	KStream<GridLocation,TimeTempTuple>[] partitionBoundaryStreams =  
-	        newTemp.through("temp-output").branch((k,v) -> isLeftPartitionBoundary(k.i),
+	        newTemp.through(streamPartitioner,"temp-output").branch((k,v) -> isLeftPartitionBoundary(k.i),
 	        		(k,v) -> isRightPartitionBoundary(k.i));
 	        
 	    	
