@@ -71,6 +71,7 @@ public class HeatGenStreamProcessor {
         kafkaConsumer.close();
         
 		if (Integer.parseInt(args[0]) == 0) { // if zero, start the producer
+	        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "heatgen-producer");
 			HeatGenProducer hgp = new HeatGenProducer(args);
 			(new Thread(hgp)).start();
 			

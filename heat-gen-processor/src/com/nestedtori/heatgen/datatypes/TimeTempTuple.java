@@ -7,4 +7,9 @@ public class TimeTempTuple {
 		time = t;
 		val = v;
 	}
+	
+	@Override
+	public String toString() {
+		return "Time: " + time + " Temp: " + val;
+	}
 }

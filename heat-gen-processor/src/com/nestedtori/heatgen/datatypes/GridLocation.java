@@ -7,4 +7,9 @@ public class GridLocation {
 		this.i = i;
 		this.j = j;
 	}
+	
+	@Override
+	public String toString() {
+		return "(" + i + "," + j + ")";
+	}
 }
