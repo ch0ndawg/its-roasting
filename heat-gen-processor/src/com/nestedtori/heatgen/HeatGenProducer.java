@@ -74,10 +74,10 @@ public class HeatGenProducer implements Runnable {
 						long timestamp = Math.round(increment) + iter;
 						producer.send(new ProducerRecord<>("heatgen-input", new GridLocation(i,j),
 								new TimeTempTuple(timestamp,dtf)));
-						Thread.sleep(timeUnit);
+						
 					}
 				}
-				
+				Thread.sleep(timeUnit); // pseudo batch in 100ms units
 			}
 		} catch (InterruptedException ie) { }
 		finally { producer.close(); }
