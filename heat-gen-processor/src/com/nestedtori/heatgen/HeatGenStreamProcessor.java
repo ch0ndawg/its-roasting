@@ -109,19 +109,16 @@ public class HeatGenStreamProcessor {
 	     
 	        // want : table to have (location, uniform timestamp, generation data)
 	        
-	        KStream<GridLocation, List<TimeTempTuple>> inclBoundaries = windowedSource
-	        		.outerJoin( pBoundaries,
-	        		 (v1, v2) -> {
-	        		List<TimeTempTuple> result = new ArrayList<TimeTempTuple>(); // empty 
-	        		if (v1 != null) {
-	        			result.add(v1);
-	        		}
-	        		if (v2 != null) {
-	        			result.add(new TimeTempTuple(v2.time,C*v2.val)); // C is coeff
-	        		}
-	        		return result;
-	        	},
-	        JoinWindows.of("boundary-join").before(110 /* milliseconds */));
+	        KStream<GridLocation, TimeTempTuple> inclBoundaries = windowedSource
+	        	.leftJoin( pBoundaries,
+	        		(v1, v2) -> {
+		        		double gData = v1.val;
+		        		if (v2 != null) {
+		        			gData += C*v2.val; // C is coeff
+		        		}
+		        		return new TimeTempTuple(v1.time, gData);
+		        	},
+	        		JoinWindows.of("boundary-join").before(110 /* milliseconds */));
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
@@ -135,13 +132,7 @@ public class HeatGenStreamProcessor {
 	    	.transform(
 	    			 () -> new CurrentTempTransformer() 
 	    		, "current")
-	    	.flatMapValues(value -> value) // a.k.a concatenate; it's already a list!
-	    	// sum up the stencil and generation data
-	    	.reduceByKey((a,b) -> new TimeTempTuple(Math.max(a.time, b.time), a.val+b.val),
-	    			TimeWindows.of("Reductions", 100 /* milliseconds */))
-
-	    	.toStream().map ( (k,p) -> new KeyValue<>(k.key(),p)) // remove the window key
-	    	.transform ( ()-> new NewTempSaver(), "current"); // write back to state store 
+	    	.transform(() -> new NewTempSaver(), "current" );
 	
 	    	// as of now, newTemp should contain the new temperature values indexed by key
 	    	

@@ -11,7 +11,7 @@ import com.nestedtori.heatgen.datatypes.TimeTempTuple;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.processor.ProcessorContext;
 
-public class CurrentTempTransformer implements Transformer<GridLocation,List<TimeTempTuple>,KeyValue<GridLocation,List<TimeTempTuple> >> {
+public class CurrentTempTransformer implements Transformer<GridLocation,TimeTempTuple,KeyValue<GridLocation,TimeTempTuple>> {
 		private KeyValueStore<GridLocation, Double> kvStore;
 		
 		@Override
@@ -21,10 +21,10 @@ public class CurrentTempTransformer implements Transformer<GridLocation,List<Tim
 		}
 		
 		@Override
-		public KeyValue<GridLocation,List<TimeTempTuple> > transform(GridLocation key, List<TimeTempTuple> value) {
+		public KeyValue<GridLocation,TimeTempTuple> transform(GridLocation key, TimeTempTuple value) {
 			// KeyValue<GridLocation,List<TimeTempTuple>> result = new KeyValue<>(key, new ArrayList<TimeTempTuple>());
 			
-			TimeTempTuple first = value.get(0);
+			double result = value.val;
 			// the stencil
 			// note that this temp value is value at the other points,
 			// unlike the batch version which spreads this value to the other indices
@@ -39,22 +39,22 @@ public class CurrentTempTransformer implements Transformer<GridLocation,List<Tim
 			// This has the effect of enforcing Dirichlet boundary conditions on cells that are
 			// ONE PAST the edges (in effect, they are ghost cells), UNLIKE the batch version
 			if (thisValue != null)
-				value.add(new TimeTempTuple(first.time,-4 * HeatGenStreamProcessor.C* thisValue));			
+				result -= 4 * HeatGenStreamProcessor.C * thisValue;			
 			if (above != null)
-				value.add(new TimeTempTuple(first.time, HeatGenStreamProcessor.C* above));
+				result += HeatGenStreamProcessor.C* above;
 			if (right != null)
-					value.add(new TimeTempTuple(first.time, HeatGenStreamProcessor.C* right));
+				result += HeatGenStreamProcessor.C* right;
 			if (below != null)
-				value.add(new TimeTempTuple(first.time, HeatGenStreamProcessor.C* below));
+				result += HeatGenStreamProcessor.C* below;
 			if (left != null)
-				value.add(new TimeTempTuple(first.time, HeatGenStreamProcessor.C* left));			
+				result += HeatGenStreamProcessor.C* left;		
 			
-			return new KeyValue<>(key, value);
+			return new KeyValue<>(key, new TimeTempTuple(value.time, result));
 		}
 		
 		@Override
-		public KeyValue<GridLocation,List<TimeTempTuple> > punctuate(long timestamp) {
-			return new KeyValue<>(new GridLocation(0,0), new ArrayList<TimeTempTuple>()); // empty; we do no periodic work
+		public KeyValue<GridLocation,TimeTempTuple > punctuate(long timestamp) {
+			return new KeyValue<>(new GridLocation(0,0), new TimeTempTuple(0,0.0)); // empty; we do no periodic work
 		}
 		@Override
 		public void close() {}
