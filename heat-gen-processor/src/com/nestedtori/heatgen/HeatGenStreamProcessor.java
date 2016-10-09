@@ -147,7 +147,7 @@ public class HeatGenStreamProcessor {
 	    	// as of now, newTemp should contain the new temperature values indexed by key
 	    	
 	    	KStream<GridLocation,TimeTempTuple>[] partitionBoundaryStreams =  
-	        newTemp.through(streamPartitioner,"temp-output")
+	        newTemp // .through(streamPartitioner,"temp-output") // unnecessary with cassandra
 	        .branch((k,v) -> isLeftPartitionBoundary(k.i),
 	        		(k,v) -> isRightPartitionBoundary(k.i));
 	    
