@@ -36,7 +36,7 @@ public class CurrentTempTransformer implements Transformer<GridLocation,TimeTemp
 			// This has the effect of enforcing Dirichlet boundary conditions on cells that are
 			// ONE PAST the edges (in effect, they are ghost cells), UNLIKE the batch version
 			if (thisValue != null)
-				result -= 4 * HeatGenStreamProcessor.C * thisValue;			
+				result += thisValue - 4 * HeatGenStreamProcessor.C * thisValue;			
 			if (above != null)
 				result += HeatGenStreamProcessor.C* above;
 			if (right != null)

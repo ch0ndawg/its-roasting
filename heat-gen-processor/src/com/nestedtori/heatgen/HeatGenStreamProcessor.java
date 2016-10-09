@@ -140,14 +140,14 @@ public class HeatGenStreamProcessor {
 	    	.transform(
 	    			 () -> new CurrentTempTransformer() 
 	    		, "current")
-	    	.transform(() -> new NewTempSaver(), "current")
-	    	.transform(() -> new SaveToCassandraTransformer("52.10.235.41" /* there's no place like it */,
-	    			leftX, rightX, bottomY, topY));
+	    	.transform(() -> new NewTempSaver(), "current");
 	
 	    	// as of now, newTemp should contain the new temperature values indexed by key
 	    	
 	    	KStream<GridLocation,TimeTempTuple>[] partitionBoundaryStreams =  
-	        newTemp // .through(streamPartitioner,"temp-output") // unnecessary with cassandra
+	        newTemp.through(streamPartitioner,"temp-output")
+	    	.transform(() -> new SaveToCassandraTransformer("52.10.235.41" /* there's no place like it */,
+	    			leftX, rightX, bottomY, topY)) 
 	        .branch((k,v) -> isLeftPartitionBoundary(k.i),
 	        		(k,v) -> isRightPartitionBoundary(k.i));
 	    
