@@ -40,7 +40,7 @@ public class SaveToCassandraTransformer implements Transformer<GridLocation,Time
 	public KeyValue<GridLocation,TimeTempTuple> transform(GridLocation key, TimeTempTuple value) {
 		double x = leftX + key.i * dx;
 		double y = bottomY + key.j * dy;
-		String jText = "{\"time\": " + value.time + ", \"x_coord\": " + x 
+		String jText = "{\"time\": " + value.time/100 + ", \"x_coord\": " + x 
 				        + ", \"y_coord\": " + y + ", \"temp\": " + value.val + "}" ; 
 		session.execute("insert into heatgen.temps JSON '" + jText + "'"); 
 		return new KeyValue<>(key, value); // return k,v as is
