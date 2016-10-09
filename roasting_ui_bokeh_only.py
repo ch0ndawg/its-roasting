@@ -43,10 +43,9 @@ def update():
     zvals = [row_list[j].temp for j in range(len(row_list))];
 
     heatmap = [ jet_web_colors[int(u*ncolors)] for u in zvals ]
-    
 
-#    plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
-    plotInfo = dict(x=xvals,y=yvals,radius=0.5,colors=heatmap)
+
+    plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
     if dataSource:
         dataSource.data = plotInfo
     else:
