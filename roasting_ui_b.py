@@ -34,7 +34,7 @@ def update():
         #return # pause
 
     row_list = list(res)
-    
+
     # this *could* be made much more efficient with the numpy deserializer
     # but some mysterious stateful behavior behind the scenes prevents this
     # from working (see branch colors-using-numpy)
@@ -42,10 +42,11 @@ def update():
     yvals = [row_list[j].y_coord for j in range(len(row_list))];
     zvals = [row_list[j].temp for j in range(len(row_list))];
 
-    heatmap = [ jet_web_colors[int(u*ncolors)] for u in zvals ]
+    heatmap = [ jet_web_colors[min(int(u*ncolors),int(ncolors))] for u in zvals ]
 
 
-    plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
+#    plotInfo = dict(x=xvals,y=yvals,radius=zvals,colors=heatmap)
+    plotInfo = dict(x=xvals,y=yvals,colors=heatmap)
     if dataSource:
         dataSource.data = plotInfo
     else:
@@ -57,7 +58,7 @@ update() # query the database
 TOOLS="resize,crosshair,pan,wheel_zoom,box_zoom,reset,box_select,lasso_select"
 
 p = figure(tools=TOOLS, x_range=(-10,10), y_range=(-10,10))
-p.circle('x', 'y', source=dataSource, radius='radius', color='colors',alpha=0.5)
+p.circle('x', 'y', source=dataSource, radius=0.25, color='colors',alpha=0.5)
 
 curdoc().add_root(p)
 
