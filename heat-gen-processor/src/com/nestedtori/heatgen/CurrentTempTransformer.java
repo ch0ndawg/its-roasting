@@ -1,8 +1,5 @@
 package com.nestedtori.heatgen;
 
-import java.util.List;
-import java.util.ArrayList;
-
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
 

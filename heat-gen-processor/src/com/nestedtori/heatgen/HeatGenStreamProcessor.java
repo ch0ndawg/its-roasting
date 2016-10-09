@@ -12,6 +12,7 @@ import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.processor.StateStoreSupplier;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.state.Stores;
+import com.datastax.driver.core.Cluster;
 
 import com.nestedtori.heatgen.datatypes.*;
 import com.nestedtori.heatgen.serdes.*;
@@ -45,6 +46,12 @@ public class HeatGenStreamProcessor {
         Properties props = new Properties();
 		numCols  = Integer.parseInt(args[1]);
 		numRows = Integer.parseInt(args[2]);
+
+		double leftX = (args.length < 6)? -10.0 : Double.parseDouble(args[5]);
+		double rightX = (args.length < 7)? 10.0 : Double.parseDouble(args[6]);
+		double bottomY =(args.length < 8)? -10.0 : Double.parseDouble(args[7]);
+		double topY = (args.length < 9)? 10.0 : Double.parseDouble(args[8]);
+		
 		// default should specify the parameter on the command line
 		 C = (args.length < 10) ? 0.1875 : Double.parseDouble(args[9]);
       
@@ -133,13 +140,17 @@ public class HeatGenStreamProcessor {
 	    	.transform(
 	    			 () -> new CurrentTempTransformer() 
 	    		, "current")
-	    	.transform(() -> new NewTempSaver(), "current");
+	    	.transform(() -> new NewTempSaver(), "current")
+	    	.transform(() -> new SaveToCassandraTransformer("127.0.0.1" /* there's no place like it */,
+	    			leftX, rightX, bottomY, topY));
 	
 	    	// as of now, newTemp should contain the new temperature values indexed by key
 	    	
 	    	KStream<GridLocation,TimeTempTuple>[] partitionBoundaryStreams =  
-	        newTemp.through(streamPartitioner,"temp-output").branch((k,v) -> isLeftPartitionBoundary(k.i),
+	        newTemp.through(streamPartitioner,"temp-output")
+	        .branch((k,v) -> isLeftPartitionBoundary(k.i),
 	        		(k,v) -> isRightPartitionBoundary(k.i));
+	    
 	        
 	    	
 	        partitionBoundaryStreams[0].map((k,v)->new KeyValue<>(new GridLocation(k.i - 1, k.j), v))
