@@ -141,7 +141,7 @@ public class HeatGenStreamProcessor {
 	    			 () -> new CurrentTempTransformer() 
 	    		, "current")
 	    	.transform(() -> new NewTempSaver(), "current")
-	    	.transform(() -> new SaveToCassandraTransformer("127.0.0.1" /* there's no place like it */,
+	    	.transform(() -> new SaveToCassandraTransformer("52.10.235.41" /* there's no place like it */,
 	    			leftX, rightX, bottomY, topY));
 	
 	    	// as of now, newTemp should contain the new temperature values indexed by key
