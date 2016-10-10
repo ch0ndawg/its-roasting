@@ -75,21 +75,27 @@ public class TempConsumer implements Runnable {
 				new KafkaConsumer<GridLocation, TimeTempTuple>(props);
 		
 		PreparedStatement ps = session.prepare("insert into heatgen.temps (time,x_coord,y_coord,temp) values (?,?,?,?)");
-		ps.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+		ps.setConsistencyLevel(ConsistencyLevel.ANY);
 		try {
 			consumer.subscribe(Arrays.asList("temp-output"));
+			BatchStatement batch = new BatchStatement();
+			
 			while (true) {
-				BatchStatement batch = new BatchStatement();
-				
 		        ConsumerRecords<GridLocation, TimeTempTuple> records = consumer.poll(200);
 		        System.out.println("Obtained " + records.count() + " records.");
+		        int batchCount = 0;
 		        for (ConsumerRecord<GridLocation, TimeTempTuple> record : records) {
 		        	GridLocation k = record.key();
 		        	TimeTempTuple value = record.value();
 		        	double x = leftX + k.i * dx;
 		     		double y = bottomY + k.j * dy;
 		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
-		     		batch.add(bs);	     		
+		     		batch.add(bs);
+		     		if (batchCount >= 10000) {
+		     			session.execute(batch);
+		     			batch.clear();
+		     		}
+		     		
 		         }
 		         session.execute(batch);
 		     }
