@@ -21,7 +21,11 @@ public class TempConsumer implements Runnable {
 	// singleton ; number of columns is solely for the purpose of partitioning
 	// N is not necessarily consistent with the actual number as given in the data itself
 	//HeatGenProducer(int N) { numCols = N; }
-	public TempConsumer(String[] args) { this.args = args; }
+	public TempConsumer(String[] args) {
+		this.args = args;
+		cassCluster = Cluster.builder().addContactPoint(server).build();
+		session = cassCluster.connect();
+	}
 	
 	private Cluster cassCluster = null;
 	private Session session = null;
@@ -29,8 +33,6 @@ public class TempConsumer implements Runnable {
 
 	
 	public void init(ProcessorContext context) {
-		cassCluster = Cluster.builder().addContactPoint(server).build();
-		session = cassCluster.connect();
 	}
 	@Override
 	public void run() {
