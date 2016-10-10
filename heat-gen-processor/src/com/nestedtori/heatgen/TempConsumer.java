@@ -49,7 +49,7 @@ public class TempConsumer implements Runnable {
       //  Serde<TimeTempTuple> GS = Serdes.serdeFrom(new TimeTempTupleSerializer(), new TimeTempTupleDeserializer());
       
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        props.put("group.id", "temp-consumer");
+        props.put("group.id", "temp-consumer-client");
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("session.timeout.ms", "30000");
@@ -88,7 +88,7 @@ public class TempConsumer implements Runnable {
 		        	TimeTempTuple value = record.value();
 		        	double x = leftX + k.i * dx;
 		     		double y = bottomY + k.j * dy;
-		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
+		     		BoundStatement bs = ps.bind(Long.toString(value.time/timeUnit), Double.toString(x), Double.toString(y), Double.toString(value.val));
 		     		batch.add(bs);	     		
 		         }
 		         session.executeAsync(batch);
