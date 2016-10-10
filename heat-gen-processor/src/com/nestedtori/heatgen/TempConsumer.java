@@ -91,12 +91,15 @@ public class TempConsumer implements Runnable {
 		     		double y = bottomY + k.j * dy;
 		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
 		     		batch.add(bs);
-		     		if (batchCount >= 10000) {
+		     		batchCount++;
+		     		if (batchCount >= 5000) {
 		     			session.execute(batch);
+		     			batchCount = 0;
 		     			batch.clear();
 		     		}
 		     		
 		         }
+		        if (batchCount > 0)
 		         session.execute(batch);
 		     }
 		} catch (WakeupException e) {
