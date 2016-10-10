@@ -27,13 +27,21 @@ public class TempConsumer implements Runnable {
 	//HeatGenProducer(int N) { numCols = N; }
 	public TempConsumer(String[] args) {
 		this.args = args;
-		cassCluster = Cluster.builder().addContactPoint(server).build();
+		cassCluster = Cluster.builder()
+				.addContactPoint(server)
+				.addContactPoint(server2)
+				.addContactPoint(server3)
+				.addContactPoint(server4)
+				.build();
 		session = cassCluster.connect();
 	}
 	
 	private Cluster cassCluster = null;
 	private Session session = null;
 	private String server = "52.10.235.41";
+	private String server2 = "54.148.221.111";
+	private String server3 = "54.70.179.144";
+	private String server4 = "52.24.132.99";
 
 	
 	public void init(ProcessorContext context) {
