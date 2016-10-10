@@ -88,7 +88,7 @@ public class TempConsumer implements Runnable {
 		        	TimeTempTuple value = record.value();
 		        	double x = leftX + k.i * dx;
 		     		double y = bottomY + k.j * dy;
-		     		BoundStatement bs = ps.bind(Long.toString(value.time/timeUnit), Double.toString(x), Double.toString(y), Double.toString(value.val));
+		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
 		     		batch.add(bs);	     		
 		         }
 		         session.executeAsync(batch);
