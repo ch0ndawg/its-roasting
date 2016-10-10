@@ -109,8 +109,8 @@ public class HeatGenStreamProcessor {
 	        KStream<GridLocation, TimeTempTuple> windowedSource = source
 	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
-	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 , acc.val + v.val),
-	        	TimeWindows.of("heatgen-windowed", 100 /* milliseconds */)) // could change this to hopping for better data
+	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 , acc.val + v.val),       // future work: use explicit watermarking
+	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(100)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
 	        	.toStream() // change back to a stream
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
@@ -129,7 +129,7 @@ public class HeatGenStreamProcessor {
 		        		}
 		        		return new TimeTempTuple(v1.time, gData);
 		        	},
-	        		JoinWindows.of("boundary-join").before(110 /* milliseconds */));
+	        		JoinWindows.of("boundary-join").before(200 /* milliseconds */));
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
