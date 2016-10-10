@@ -12,13 +12,10 @@ import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.processor.StateStoreSupplier;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.state.Stores;
-import com.datastax.driver.core.Cluster;
 
 import com.nestedtori.heatgen.datatypes.*;
 import com.nestedtori.heatgen.serdes.*;
 
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Properties;
 import java.lang.Thread;
 
@@ -82,7 +79,13 @@ public class HeatGenStreamProcessor {
 			HeatGenProducer hgp = new HeatGenProducer(args);
 			(new Thread(hgp)).start();
 			
-		} else { // run the streamer app
+		} else if (Integer.parseInt(args[0]) == 2) {
+			 // run the consumer
+			props.put(StreamsConfig.APPLICATION_ID_CONFIG, "temp-consumer");
+			TempConsumer tc = new TempConsumer(args);
+			(new Thread(tc)).start();
+		} else {
+			// run the streamer
 	        // make sure heatgen-input is copartitioned with partition-boundaries
 	        // consider using another topic as a state store
 	        
@@ -146,8 +149,8 @@ public class HeatGenStreamProcessor {
 	    	
 	    	KStream<GridLocation,TimeTempTuple>[] partitionBoundaryStreams =  
 	        newTemp.through(streamPartitioner,"temp-output")
-	    	.transform(() -> new SaveToCassandraTransformer("52.10.235.41" /* there's no place like it */,
-	    			leftX, rightX, bottomY, topY)) 
+	    	//.transform(() -> new SaveToCassandraTransformer("52.10.235.41",
+	    	//		leftX, rightX, bottomY, topY)) 
 	        .branch((k,v) -> isLeftPartitionBoundary(k.i),
 	        		(k,v) -> isRightPartitionBoundary(k.i));
 	    

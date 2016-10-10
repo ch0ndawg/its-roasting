@@ -13,7 +13,6 @@ import java.util.Properties;
 
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.StreamsConfig;
 
 import java.util.Random;
 
