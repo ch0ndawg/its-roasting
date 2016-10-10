@@ -28,9 +28,9 @@ public class CurrentTempTransformer implements Transformer<GridLocation,TimeTemp
 			// it all comes out in the wash (erm. Reduction)
 			Double thisValue = kvStore.get(key);
 			Double above = kvStore.get(new GridLocation(key.i,key.j+1) );
-			Double right = kvStore.get(new GridLocation(key.i+1,key.j) );
+			Double right = (HeatGenStreamProcessor.isRightPartitionBoundary(key.i)) ? 0.0 : kvStore.get(new GridLocation(key.i+1,key.j) );
 			Double below = kvStore.get(new GridLocation(key.i,key.j-1) );
-			Double left = kvStore.get(new GridLocation(key.i-1,key.j) );
+			Double left = (HeatGenStreamProcessor.isRightPartitionBoundary(key.i)) ? 0.0 : kvStore.get(new GridLocation(key.i-1,key.j) );
 			
 			// nulls are treated as ZERO
 			// This has the effect of enforcing Dirichlet boundary conditions on cells that are

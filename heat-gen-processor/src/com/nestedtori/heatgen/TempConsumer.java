@@ -79,7 +79,7 @@ public class TempConsumer implements Runnable {
 		try {
 			consumer.subscribe(Arrays.asList("temp-output"));
 			while (true) {
-				//BatchStatement batch = new BatchStatement();
+				BatchStatement batch = new BatchStatement();
 				
 		        ConsumerRecords<GridLocation, TimeTempTuple> records = consumer.poll(200);
 		        System.out.println("Obtained " + records.count() + " records.");
@@ -88,11 +88,10 @@ public class TempConsumer implements Runnable {
 		        	TimeTempTuple value = record.value();
 		        	double x = leftX + k.i * dx;
 		     		double y = bottomY + k.j * dy;
-		     		//BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
-		     		//batch.add(bs);
-		     		session.execute(ps.bind(value.time/timeUnit, x, y, value.val));
+		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
+		     		batch.add(bs);	     		
 		         }
-		         //session.execute(batch);
+		         session.execute(batch);
 		     }
 		} catch (WakeupException e) {
 			// do nothing
