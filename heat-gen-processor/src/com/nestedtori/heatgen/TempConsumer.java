@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
 
 import com.nestedtori.heatgen.datatypes.*;
 
@@ -48,7 +49,7 @@ public class TempConsumer implements Runnable {
         props.put("group.id", "temp-consumer");
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
-        props.put("session.timeout.ms", "30000");
+        props.put("session.timeout.ms", "300000");
         props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
         props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
         
@@ -69,11 +70,11 @@ public class TempConsumer implements Runnable {
         
 		KafkaConsumer<GridLocation, TimeTempTuple> consumer = 
 				new KafkaConsumer<GridLocation, TimeTempTuple>(props);
-		consumer.subscribe(Arrays.asList("temp-output"));
-		
+	
 		try {
+			consumer.subscribe(Arrays.asList("temp-output"));
 			while (true) {
-		         ConsumerRecords<GridLocation, TimeTempTuple> records = consumer.poll(1000);
+		         ConsumerRecords<GridLocation, TimeTempTuple> records = consumer.poll(Long.MAX_VALUE);
 		         for (ConsumerRecord<GridLocation, TimeTempTuple> record : records) {
 		        	GridLocation k = record.key();
 		        	TimeTempTuple value = record.value();
@@ -84,6 +85,8 @@ public class TempConsumer implements Runnable {
 		     		session.execute("insert into heatgen.temps JSON '" + jText + "'"); 
 		         }       
 		     }
+		} catch (WakeupException e) {
+			// do nothing
 		} finally {
 			consumer.close();
 			if (cassCluster != null) cassCluster.close();
