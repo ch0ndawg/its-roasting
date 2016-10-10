@@ -91,7 +91,7 @@ public class TempConsumer implements Runnable {
 		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
 		     		batch.add(bs);	     		
 		         }
-		         session.executeAsync(batch);
+		         session.execute(batch);
 		     }
 		} catch (WakeupException e) {
 			// do nothing
