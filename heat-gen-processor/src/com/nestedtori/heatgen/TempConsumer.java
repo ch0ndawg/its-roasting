@@ -5,6 +5,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.BatchStatement;
 
 import com.nestedtori.heatgen.datatypes.*;
 
@@ -70,20 +73,21 @@ public class TempConsumer implements Runnable {
         
 		KafkaConsumer<GridLocation, TimeTempTuple> consumer = 
 				new KafkaConsumer<GridLocation, TimeTempTuple>(props);
-	
+		
+		PreparedStatement ps = session.prepare("insert into heatgen.temps (time,x_coord,y_coord,temp) values (?,?,?,?)");
 		try {
 			consumer.subscribe(Arrays.asList("temp-output"));
 			while (true) {
-		         ConsumerRecords<GridLocation, TimeTempTuple> records = consumer.poll(Long.MAX_VALUE);
-		         for (ConsumerRecord<GridLocation, TimeTempTuple> record : records) {
+				BatchStatement batch = new BatchStatement();
+		        ConsumerRecords<GridLocation, TimeTempTuple> records = consumer.poll(1000);
+		        for (ConsumerRecord<GridLocation, TimeTempTuple> record : records) {
 		        	GridLocation k = record.key();
 		        	TimeTempTuple value = record.value();
 		        	double x = leftX + k.i * dx;
 		     		double y = bottomY + k.j * dy;
-		     		String jText = "{\"time\": " + value.time/timeUnit + ", \"x_coord\": " + x 
-		     				        + ", \"y_coord\": " + y + ", \"temp\": " + value.val + "}" ; 
-		     		session.execute("insert into heatgen.temps JSON '" + jText + "'"); 
-		         }       
+		     		batch.add(ps.bind(value.time/timeUnit, x, y, value.val));	     		
+		         }
+		         session.execute(batch); 
 		     }
 		} catch (WakeupException e) {
 			// do nothing
