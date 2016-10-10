@@ -49,7 +49,7 @@ public class TempConsumer implements Runnable {
         props.put("group.id", "temp-consumer");
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
-        props.put("session.timeout.ms", "60000");
+        props.put("session.timeout.ms", "30000");
         props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
         props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
         
