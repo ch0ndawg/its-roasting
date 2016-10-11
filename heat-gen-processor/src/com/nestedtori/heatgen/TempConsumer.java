@@ -59,7 +59,7 @@ public class TempConsumer implements Runnable {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         props.put("group.id", "temp-consumer-client");
         props.put("enable.auto.commit", "true");
-        props.put("auto.commit.interval.ms", "1000");
+        props.put("auto.commit.interval.ms", "200");
         props.put("session.timeout.ms", "30000");
         props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
         props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
@@ -82,7 +82,7 @@ public class TempConsumer implements Runnable {
 		KafkaConsumer<GridLocation, TimeTempTuple> consumer = 
 				new KafkaConsumer<GridLocation, TimeTempTuple>(props);
 		
-		PreparedStatement ps = session.prepare("insert into heatgen.temps (time,x_coord,y_coord,temp) values (?,?,?,?)");
+		PreparedStatement ps = session.prepare("insert into heatgen.temps_str (time,x_coord,y_coord,temp) values (?,?,?,?)");
 		ps.setConsistencyLevel(ConsistencyLevel.ANY);
 		try {
 			consumer.subscribe(Arrays.asList("temp-output"));
@@ -100,14 +100,14 @@ public class TempConsumer implements Runnable {
 		     		BoundStatement bs = ps.bind(value.time/timeUnit, x, y, value.val);
 		     		batch.add(bs);
 		     		batchCount++;
-		     		if (batchCount >= 500) {
-		     			session.execute(batch);
+		     		if (batchCount >= 300) {
+		     			session.executeAsync(batch);
 		     			batchCount = 0;
 		     			batch.clear();
 		     		}
 		     		
 		         }
-		         session.execute(batch);
+		         session.executeAsync(batch);
 		     }
 		} catch (WakeupException e) {
 			// do nothing
