@@ -117,7 +117,6 @@ public class HeatGenStreamProcessor {
 	        	TimeWindows.of("heatgen-windowed", timeUnit /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
 	        	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
-	        	.through("heatgen-intermediate-topic-windowed")
 	        	.toStream() // change back to a stream
 	        	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v)))
 	        	.through(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
