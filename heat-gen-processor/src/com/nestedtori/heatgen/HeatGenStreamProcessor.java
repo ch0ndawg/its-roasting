@@ -128,7 +128,7 @@ public class HeatGenStreamProcessor {
 	        KTable<GridLocation, TimeTempTuple> inclBoundaries = windowedSource
 	        	.outerJoin( pBoundaries,
 	        		(v1, v2) -> {
-		        		double gData = v1.val;
+		        		double gData = (v1 == null? 0.0: v1.val);
 		        		if (v2 != null) {
 		        			// System.out.println("successfully joined boundary data " + v2 + " to node "+ v1);
 		        			gData += C*v2.val; // C is coeff
