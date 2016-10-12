@@ -39,6 +39,7 @@ public class HeatGenStreamProcessor {
 		if (k == numCols - 1) return false;
 		return k % numInEach == numInEach - 1;
 	}
+	
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
 		numCols  = Integer.parseInt(args[1]);
@@ -59,6 +60,7 @@ public class HeatGenStreamProcessor {
         props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
         props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, GridLocationSerde.class);
         props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, TimeTempTupleSerde.class);
+        props.put("num.stream.threads","2");
         
         props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
         props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
