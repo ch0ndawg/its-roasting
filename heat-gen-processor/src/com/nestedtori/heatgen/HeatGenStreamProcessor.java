@@ -113,7 +113,7 @@ public class HeatGenStreamProcessor {
 	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
 	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 , acc.val + v.val),       // future work: use explicit watermarking
-	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(timeUnit).until(5*timeUnit)) // to account for missing data;  
+	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
 	        	.toStream() // change back to a stream
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
