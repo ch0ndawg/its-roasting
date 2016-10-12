@@ -127,6 +127,7 @@ public class HeatGenStreamProcessor {
 	        		(v1, v2) -> {
 		        		double gData = v1.val;
 		        		if (v2 != null) {
+		        			System.out.println("successfully joined boundary data " + v2 + " to node "+ v1);
 		        			gData += C*v2.val; // C is coeff
 		        		}
 		        		return new TimeTempTuple(v1.time, gData);
