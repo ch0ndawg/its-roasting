@@ -8,6 +8,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.processor.StateStoreSupplier;
 import org.apache.kafka.streams.kstream.JoinWindows;
@@ -106,7 +107,7 @@ public class HeatGenStreamProcessor {
 	        builder.addStateStore(currentTemp);
 	        
 	        KStream<GridLocation, TimeTempTuple> source = builder.stream("heatgen-input");
-	        KStream<GridLocation, TimeTempTuple> pBoundaries = builder.stream("partition-boundaries");
+	        KTable<GridLocation, TimeTempTuple> pBoundaries = builder.table("partition-boundaries");
 	
 	        
 	        KStream<GridLocation, TimeTempTuple> windowedSource = source
@@ -116,6 +117,7 @@ public class HeatGenStreamProcessor {
 	        	TimeWindows.of("heatgen-windowed", timeUnit /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
 	        	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
+	        	.through("heatgen-intermediate-topic-windowed")
 	        	.toStream() // change back to a stream
 	        	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v)))
 	        	.through(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
@@ -132,8 +134,8 @@ public class HeatGenStreamProcessor {
 		        			gData += C*v2.val; // C is coeff
 		        		}
 		        		return new TimeTempTuple(v1.time, gData);
-		        	},
-	        		JoinWindows.of("boundary-join"));
+		        	} /*,
+	        		JoinWindows.of("boundary-join") */);
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
