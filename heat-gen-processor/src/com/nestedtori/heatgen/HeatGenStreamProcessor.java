@@ -112,7 +112,7 @@ public class HeatGenStreamProcessor {
 	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
 	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 , acc.val + v.val),       // future work: use explicit watermarking
-	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(100).until(5000)) // to account for missing data;  
+	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(100).until(30000)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
 	        	.toStream() // change back to a stream
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
@@ -127,12 +127,12 @@ public class HeatGenStreamProcessor {
 	        		(v1, v2) -> {
 		        		double gData = v1.val;
 		        		if (v2 != null) {
-		        			System.out.println("successfully joined boundary data " + v2 + " to node "+ v1);
+		        			// System.out.println("successfully joined boundary data " + v2 + " to node "+ v1);
 		        			gData += C*v2.val; // C is coeff
 		        		}
 		        		return new TimeTempTuple(v1.time, gData);
 		        	},
-	        		(JoinWindows)JoinWindows.of("boundary-join").before(200 /* milliseconds */).until(5000));
+	        		(JoinWindows)JoinWindows.of("boundary-join").before(150 /* milliseconds */).until(30000));
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
