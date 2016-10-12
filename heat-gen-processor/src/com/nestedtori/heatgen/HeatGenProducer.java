@@ -76,7 +76,7 @@ public class HeatGenProducer implements Runnable {
 						
 					}
 				}
-				Thread.sleep(timeUnit); // pseudo batch in 100ms units
+				Thread.sleep(timeUnit*4); // pseudo batch in 100ms units
 			}
 		} catch (InterruptedException ie) { }
 		finally { producer.close(); }
