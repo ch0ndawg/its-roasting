@@ -133,7 +133,7 @@ public class HeatGenStreamProcessor {
 		        		}
 		        		return new TimeTempTuple(v1.time, gData);
 		        	},
-	        		(JoinWindows)JoinWindows.of("boundary-join").until(5*timeUnit));
+	        		JoinWindows.of("boundary-join"));
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
