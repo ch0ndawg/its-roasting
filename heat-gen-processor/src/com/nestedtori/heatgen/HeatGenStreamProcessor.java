@@ -25,6 +25,7 @@ public class HeatGenStreamProcessor {
 	public static int numPartitions;
 	public static int numInEach;
 	public static double C; 
+	public static int timeUnit = 100;
 	
 	public static boolean isBoundary(int i, int j) { 
 		return i == 0 || i == numCols - 1 || j ==0 || j == numRows - 1 ;
@@ -112,7 +113,7 @@ public class HeatGenStreamProcessor {
 	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
 	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 , acc.val + v.val),       // future work: use explicit watermarking
-	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(100).until(30000)) // to account for missing data;  
+	        	TimeWindows.of("heatgen-windowed", 300 /* milliseconds */).advanceBy(timeUnit).until(5*timeUnit)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
 	        	.toStream() // change back to a stream
 	        	.map( (k,p) -> new KeyValue<GridLocation,TimeTempTuple>(k.key(),
@@ -132,7 +133,7 @@ public class HeatGenStreamProcessor {
 		        		}
 		        		return new TimeTempTuple(v1.time, gData);
 		        	},
-	        		(JoinWindows)JoinWindows.of("boundary-join").before(150 /* milliseconds */).until(30000));
+	        		(JoinWindows)JoinWindows.of("boundary-join").until(5*timeUnit));
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
 	        
 	        // so far: each gridLocation should contain either
@@ -159,9 +160,9 @@ public class HeatGenStreamProcessor {
 	    
 	        
 	    	
-	        partitionBoundaryStreams[0].map((k,v)->new KeyValue<>(new GridLocation(k.i - 1, k.j), v))
+	        partitionBoundaryStreams[0].map((k,v)->new KeyValue<>(new GridLocation(k.i - 1, k.j), new TimeTempTuple(v.time + timeUnit, v.val)))
 	        		.to(streamPartitioner, "partition-boundaries"); 
-	        partitionBoundaryStreams[1].map((k,v)->new KeyValue<>(new GridLocation(k.i + 1, k.j), v))
+	        partitionBoundaryStreams[1].map((k,v)->new KeyValue<>(new GridLocation(k.i + 1, k.j), new TimeTempTuple(v.time + timeUnit, v.val)))
 	        		.to(streamPartitioner, "partition-boundaries"); 
 	        
 	        KafkaStreams streams = new KafkaStreams(builder, props);
