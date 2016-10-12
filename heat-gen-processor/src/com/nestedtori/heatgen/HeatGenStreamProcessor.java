@@ -110,7 +110,8 @@ public class HeatGenStreamProcessor {
 	        KTable<GridLocation, TimeTempTuple> pBoundaries = builder.table("partition-boundaries");
 	
 	        
-	        KStream<GridLocation, TimeTempTuple> windowedSource = source
+	       /* KStream<GridLocation, TimeTempTuple> windowedSource = */
+	        source
 	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
 	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 /* this is a counter, not a time */, acc.val + v.val),       // future work: use explicit watermarking
@@ -119,13 +120,13 @@ public class HeatGenStreamProcessor {
 	        	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
 	        	.toStream() // change back to a stream
 	        	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v)))
-	        	.through(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
+	        	.to(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
 	        // should get average rate in window, and all timestamps should be standardized!
 	     
 	        // want : table to have (location, uniform timestamp, generation data)
-	        
-	        KStream<GridLocation, TimeTempTuple> inclBoundaries = windowedSource
-	        	.leftJoin( pBoundaries,
+	        KTable<GridLocation, TimeTempTuple> windowedSource = builder.table("heatgen-intermediate-topic");
+	        KTable<GridLocation, TimeTempTuple> inclBoundaries = windowedSource
+	        	.outerJoin( pBoundaries,
 	        		(v1, v2) -> {
 		        		double gData = v1.val;
 		        		if (v2 != null) {
@@ -141,7 +142,7 @@ public class HeatGenStreamProcessor {
 	        // a list singleton of heat generation data, and in the boundary case,
 	        // both the singleton and the previous result
 	        
-	    	KStream<GridLocation, TimeTempTuple> newTemp = inclBoundaries
+	    	KStream<GridLocation, TimeTempTuple> newTemp = inclBoundaries.toStream()
 	    	// the most important part:
 	    	// a custom transformer that retrieves current values in a state store,
 	    	// computes the stencil (4 nearest neighbors), multiplied by the appropriate constant
