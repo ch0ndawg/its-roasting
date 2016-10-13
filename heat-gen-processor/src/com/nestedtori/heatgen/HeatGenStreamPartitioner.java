@@ -12,10 +12,7 @@ public class HeatGenStreamPartitioner implements StreamPartitioner<GridLocation,
 	public Integer partition(GridLocation key,
 			TimeTempTuple value,
             int numPartitions) {
-
-		int p =key.i*numPartitions/numCols;
-		System.out.println("" + key +" received, " + " therefore partition number " + p);
-		return p;
+		return key.i*numPartitions/numCols;
 	}
 
 }
