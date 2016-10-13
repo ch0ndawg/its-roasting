@@ -10,6 +10,7 @@ Insight Data Engineering Project: Streaming Heat Generation Data and Solving the
 5. Presentation
 6. Scaling and Performance
 
+This document is not yet complete; please check back again soon.
 ---
 
 ## <a name="intro"></a> Introduction
@@ -67,6 +68,6 @@ The pipeline we used is as follows:
 
 ## <a name="presentation"></a> Presentation
 
-At the [demo site](http://nestedtori.tech) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we'll note in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 5 minutes of data (where the events are happening at about 10 per second, per node). 
+At the [demo site](http://nestedtori.tech) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we'll note in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 5 minutes of data (where the events are happening at about 10 per second, per node).
 
 ## <a name="scaling"></a> Scaling and Performance
