@@ -111,15 +111,16 @@ public class HeatGenStreamProcessor {
 	
 	        
 	       /* KStream<GridLocation, TimeTempTuple> windowedSource = */
-	        source
-	        	.aggregateByKey(() -> new TimeTempTuple(0,0.0),
+	        source.mapValues(v -> new TimeTempTuple ( (long) Math.ceil((double)v.time/timeUnit  * timeUnit), v.val ) )
+	        	// .aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
-	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 /* this is a counter, not a time */, acc.val + v.val),       // future work: use explicit watermarking
-	        	TimeWindows.of("heatgen-windowed", timeUnit /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
+	        //	(k,v,acc) -> new TimeTempTuple( acc.time + 1 /* this is a counter, not a time */, acc.val + v.val),       // future work: use explicit watermarking
+	        //	TimeWindows.of("heatgen-windowed", timeUnit /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
-	        	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
-	        	.toStream() // change back to a stream
-	        	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v)))
+	       // 	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
+	       // 	.toStream() // change back to a stream
+	       // 	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v))) 
+	        	
 	        	.to(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
 	        // should get average rate in window, and all timestamps should be standardized!
 	     
