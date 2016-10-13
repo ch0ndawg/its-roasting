@@ -150,7 +150,7 @@ public class HeatGenStreamProcessor {
 	    	.transform(
 	    			 () -> new CurrentTempTransformer() 
 	    		, "current")
-	    	.transform(() -> new NewTempSaver(), "current");
+	    	.transform(() -> new NewTempSaver(numRows, numCols), "current");
 	
 	    	// as of now, newTemp should contain the new temperature values indexed by key
 	    	
