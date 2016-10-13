@@ -109,9 +109,9 @@ public class HeatGenStreamProcessor {
 	        KStream<GridLocation, TimeTempTuple> source = builder.stream("heatgen-input");
 	        KTable<GridLocation, TimeTempTuple> pBoundaries = builder.table("partition-boundaries");
 	
-	        
+	         
 	       /* KStream<GridLocation, TimeTempTuple> windowedSource = */
-	        source.mapValues(v -> new TimeTempTuple ( (long) Math.ceil((double)v.time/timeUnit  * timeUnit), v.val ) )
+	        source.mapValues(v -> new TimeTempTuple ( (long) Math.ceil((double)v.time/timeUnit - 0.5) * timeUnit, v.val ) )
 	        	// .aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
 	        //	(k,v,acc) -> new TimeTempTuple( acc.time + 1 /* this is a counter, not a time */, acc.val + v.val),       // future work: use explicit watermarking
