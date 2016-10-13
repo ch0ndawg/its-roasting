@@ -133,7 +133,7 @@ public class HeatGenStreamProcessor {
 		        			// System.out.println("successfully joined boundary data " + v2 + " to node "+ v1);
 		        			gData += C*v2.val; // C is coeff
 		        		}
-		        		return new TimeTempTuple(v1.time, gData);
+		        		return new TimeTempTuple(v1 != null? v1.time : v2.time, gData);
 		        	} /*,
 	        		JoinWindows.of("boundary-join") */);
 	        // this is because the boundary terms will be guaranteed to belong to the previous time window.
