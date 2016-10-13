@@ -62,7 +62,7 @@ public class HeatGenStreamProcessor {
         props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181");
         props.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, GridLocationSerde.class);
         props.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, TimeTempTupleSerde.class);
-        props.put("num.stream.threads","2");
+        props.put("num.stream.threads","6");
         
         props.put("key.deserializer", "com.nestedtori.heatgen.serdes.GridLocationDeserializer");
         props.put("value.deserializer", "com.nestedtori.heatgen.serdes.TimeTempTupleDeserializer");
