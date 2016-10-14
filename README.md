@@ -4,14 +4,13 @@ Insight Data Engineering Project: Streaming Heat Generation Data and Solving the
 ---
 ## Table of Contents
 1. [Introduction](#intro)
-2. Diffusion as a Stateful Streaming Problem
-3. Cluster Structure
-4. Pipeline
-5. Presentation
-6. Scaling and Performance
+4. [Pipeline](#pipeline)
+2. [Diffusion as a Stateful Streaming Problem](#statestream)
+3. [Cluster Structure](#cluster)
+5. [Presentation](#presentation)
+6. [Scaling and Performance](#scaling)
 
 This document is not yet complete; please check back again soon.
----
 
 ## <a name="intro"></a> Introduction
 The process of diffusion is a well-known one in the physical sciences, and has been used to successfully model the spread of many things that are not necessarily motivated by physical processes (we'll see some examples when we discuss what kind of problem this really turns into). For this project, however, we'll focus on a venerable and favorite diffusion problem, that of heat propagation. We show how this type of problem can be recast as a very common streaming problem, that of stateful streaming.
@@ -29,7 +28,7 @@ and $f$ is the rate of heat generation at each point in the domain (measured in 
 
 To solve this numerically, we have to discretize in both time and space. For the spatial part, we'll assume it's a bunch of rectangular grid points as follows:
 
-![rectangular grid](images/grid)
+![rectangular grid](images/grid.png)
 
 $u$ is now represented as a matrix $(u_{i,j})$  with each entry corresponding to the grid; in common programming languages, it looks like `u(i,j)` (MATLAB-like languages) or `u[i][j]` (C-like languages), or just some positional function like `u.at(i,j)`. The operator $\Delta$ takes the form of a centered difference, using the points in a _stencil_: the use of the 4 nearest neighbors along with the central points:
 
@@ -51,6 +50,13 @@ It is convenient to combine all the constants in one (we'll call it $C$). Many m
 
 Let's translate this into a form suitable to programming in a streaming framework. First, noting that the superscript _n_ is for time, we see that it only depends on one previous time step, so that we can conceive of this as updating one variable (actually dependence on multiple timesteps can be modeled as a system two variables, so this actually is not a loss of generality). Here by "variable" we actually mean a full 2D array varaible,. In traditional programming applications, states are precisely what is modeled by variables. In streaming applications, state variables are stored separately in a cache-type database, such as RocksDB.
 
+
+## <a name="pipeline"></a> Architecture
+
+![pipeline pic](images/pipeline.png)
+
+Each sensor in the array is assumed to send approximately 10 messages a second. In $30\times 30$ square array, this can amount to around 10000 messages a second. Data is fed from this sensor array into a single Kafka topic `heatgen-input`; each topic partition corresponds to a range of columns in the input data.
+
 ## <a name="statestream"></a> Diffusion as a Stateful Streaming Problem
 
 (Coming soon)
@@ -59,15 +65,14 @@ Let's translate this into a form suitable to programming in a streaming framewor
 The structure of the clustes used:
 1. Four `m4.large` nodes for the Kafka cluster (4 workers; leader elected)
 2. Four `m4.large` nodes for the Cassandra cluster (master-slave, 1 leader, 3 workers)
-3. One `t2.micro` web server.
+3. One `m3.medium` web server.
 
 
-## <a name="statestream"></a> Pipeline
-The pipeline we used is as follows:
-![pipeline pic](images/pipeline)
+
 
 ## <a name="presentation"></a> Presentation
 
 At the [demo site](http://nestedtori.tech) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we'll note in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 5 minutes of data (where the events are happening at about 10 per second, per node).
 
 ## <a name="scaling"></a> Scaling and Performance
+(coming soon)
