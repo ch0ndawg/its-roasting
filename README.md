@@ -74,9 +74,16 @@ The data _f_ is the input stream that we would like to combine with the stored s
 
 ![pipeline pic](images/pipeline.png)
 
-Each sensor in the array is assumed to send approximately 10 messages a second. In 30 x 30 square array, this can amount to around 10000 messages a second. Data is fed from this sensor array[<sup>1</sup>](#foot1) into a single Kafka topic `heatgen-input`; each topic partition corresponds to a range of columns in the input data.
+Each sensor in the array is assumed to send approximately 10 messages a second. In 30 x 30 square array, this can amount to around 10000 messages a second. Data is fed from this sensor array[<sup>1</sup>](#foot1) into a single Kafka topic `heatgen-input`; each topic partition corresponds to a range of columns in the input data. The input data schema is
 
-Next, we use Kafka streams to process this data. For a non-parallelizable version of this (only one partition in the input Kafka topic), this is very straightforward: use a windowing transformation to round timestamps, combine it with information in the state store using the update algorithm described above, and save the new state, before writing it out to Cassandra. In order to be able to parallelize the computation (and now use a partitioned version of the input Kafka topic)
+```{"time": "long", "gridX": "int", "gridY": "int", "gen": "double"}```.
+
+This would be suitable for Avro, but I chose to directly write serializers and deserializers for Kafka as it was simpler to set up.
+
+Next, we use Kafka streams to process this data. For a non-parallelizable version of this (only one partition in the input Kafka topic), this is very straightforward: use a windowing transformation to round timestamps, combine it with information in the state store using the update algorithm described above, and save the new state, before writing it out to Cassandra (through the topic `temp-output`). In order to be able to parallelize the computation (and now use a partitioned version of the input Kafka topic), we need another topic, `partition-boundaries`, that holds . We will describe this in more detail in [Stream Processing Implementation](#statestream). For the output, the schema is very similar to the input:
+
+```{"time": "long", "gridX": "int", "gridY": "int", "temp": "double"}```.
+
 
 Bokeh reads the data in from the database and plots a heat map (each node is represented by a small circle). Cassandra is actually better suited to the batch version of this project (we'll describe in detail later about the batch vs. streaming implementations); originally, I envisioned being able to look at and replay past data. Perhaps a database with a push capability (such as RethinkDB) would be more appropriate for the streaming version, and indeed, something to experiment with given more time.
 
@@ -97,7 +104,7 @@ The way we chose to communicate is by using precisely the mechanism Kafka provid
 
 ![stream topology](images/stream-topology.png)
 
-What's happening here is that "Heat Gen Data" and "Partition Boundary Data" are the Kafka topics. Heat Gen Data provides the terms _f_<sub>_i_,_j_</sub> in the equation, and Partition Boundary Data provides the _u_<sub>_i-1_,_j_</sub> or _u_<sub>_i+1_,_j_</sub> _when such data is needed_, namely, when _i_ is an index on the left or right boundary. The windowing processor rounds the timesteps corresponding to the generation data (and actually can average this over a window some number of time units long, so that the heat generation data is actually a running average of some number of timesteps. This compensates for a lot of near-misses in a better way than rounding can do alone). Our chosen time unit is 100 ms. Next, the nearest neighbor combiner is what produces the extra terms
+What's happening here is that "Heat Gen Data" and "Partition Boundary Data" are the Kafka topics. Heat Gen Data provides the terms _f_<sub>_i_,_j_</sub> in the equation, and Partition Boundary Data provides the _u_<sub>_i-1_,_j_</sub> or _u_<sub>_i+1_,_j_</sub> _when such data is needed_, namely, when _i_ is an index on the left or right boundary. The windowing processor rounds the timesteps corresponding to the generation data (and actually can average this over a window some number of time units long, so that the heat generation data is actually a running average of some number of timesteps. This compensates for a lot of near-misses in a better way than rounding can do alone). Our chosen time unit is 100 ms. Next, the nearest neighbor combiner generates the  _u_<sub>_i-1_,_j_</sub>,  _u_<sub>_i+1_,_j_</sub>,  -4_u_<sub>_i_,_j_</sub>,  _u_<sub>_i_,_j-1_</sub>, and  _u_<sub>_i_,_j+1_</sub> terms in the sum (again, if they can be found in the partition: otherwise it'll yield 0, and hopefully the boundary data provides the result instead at that point), all scaled by the constant _C_. The reducer sums all this up, and then the results are saved to database as well as the current state store. Finally, the boundary data from this freshly computed data is written back to the Kafka topic "partition-boundaries", which feeds back into the beginning of the process. In some sense, this is not a DAG (directed acyclic graph) of computation, though of course we get around the fact that it isn't by realizing that loop as a topic.
 
 ## <a name="cluster"> </a> Cluster Structure
 The structure of the clustes used:
