@@ -30,9 +30,9 @@ To solve this numerically, we have to discretize in both time and space. For the
 
 ![rectangular grid](images/grid.png)
 
-_u_ is now represented as a matrix _u_(_i_,_j_)  with each entry corresponding to the grid; in common programming languages, it looks like `u(i,j)` (MATLAB-like languages) or `u[i][j]` (C-like languages), or just some positional function like `u.at(i,j)`. The operator Δ takes the form of a centered difference, using the points in a _stencil_: the use of the 4 nearest neighbors along with the central points:
+_u_ is now represented as a matrix _u_<sub>_i_,_j_</sub>  with each entry corresponding to the grid; in common programming languages, it looks like `u(i,j)` (MATLAB-like languages) or `u[i][j]` (C-like languages), or just some positional function like `u.at(i,j)`. The operator Δ takes the form of a centered difference, using the points in a _stencil_: the use of the 4 nearest neighbors along with the central points:
 
-![stencil](images/stencil)
+![stencil](images/stencil.png)
 
 For a grid size _h_ we add the value of _u_ at the point to the left and right, and subtract twice the value of _u_ (this is discretizing the 2nd _x_-derivative) and then take _u_ at the points above and below, and finally subtract twice the middle again (for the 2nd _y_-derivative). Finally, we divide by the square of the grid spacing _h_.
 
