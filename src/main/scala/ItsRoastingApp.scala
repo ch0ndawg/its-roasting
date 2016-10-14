@@ -35,8 +35,8 @@ object ItsRoastingApp  {
       // normalized inhomogeneous term
       val dtf = if (rng.nextDouble < probParam) coeff*dx*dx/k *rateParam
       	      	else 0.0 // streaming data at timestep; coeff is k dt/dx^2
-      
-      // produce the varicous increments using the stencil (this is the "matrix multiplication")
+      	      	
+     // produce the varicous increments using the stencil (this is the "matrix multiplication")
       val incrementVals = Vector(((i,j), -4*coeff*u), ((i-1,j), coeff*u), ((i+1,j), coeff*u),
                                  ((i,j-1), coeff*u), ((i,j+1),coeff*u), ((i,j), dtf)) // also add in inhomogeneous term
       
