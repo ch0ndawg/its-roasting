@@ -115,7 +115,9 @@ The structure of the clustes used:
 
 ## <a name="presentation"></a> Presentation
 
-At the [demo site](http://nestedtori.tech) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we'll note in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 5 minutes of data (where the events are happening at about 10 per second, per node).
+At the [demo site](http://nestedtori.tech) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we noted in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 9 minutes of data (where the events are happening at about 10 per second, per node):
+
+![batch version](images/temp-batch)
 
 ## <a name="scaling"></a> Scaling and Performance
 As we add more nodes, we can add more partitions, so scaling is pretty simple under this system. However, there are definitely issues with having fine-grained control over load balancing. The automatic load balancing of the Kafka streams often lets single partitions to be computed on for too long, and thus, information about which which parts are generating what data are missing for a time longer than the refresh rate; thus they completely disappear:
