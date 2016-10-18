@@ -52,7 +52,7 @@ Therefore, applying both discretizations to
 
 ![heat equation](images/heateq.png)
 
-we get
+we get (restoring the dependence on the matrix entries)
 
 ![derivation-1](images/derivation-1.png)
 
@@ -104,7 +104,7 @@ The way we chose to communicate is by using precisely the mechanism Kafka provid
 
 ![stream topology](images/stream-topology.png)
 
-What's happening here is that "Heat Gen Data" and "Partition Boundary Data" are the Kafka topics. Heat Gen Data provides the terms _f_<sub>_i_,_j_</sub> in the equation, and Partition Boundary Data provides the _u_<sub>_i-1_,_j_</sub> or _u_<sub>_i+1_,_j_</sub> _when such data is needed_, namely, when _i_ is an index on the left or right boundary. The windowing processor rounds the timesteps corresponding to the generation data (and actually can average this over a window some number of time units long, so that the heat generation data is actually a running average of some number of timesteps. This compensates for a lot of near-misses in a better way than rounding can do alone). Our chosen time unit is 100 ms. Next, the nearest neighbor combiner generates the  _u_<sub>_i-1_,_j_</sub>,  _u_<sub>_i+1_,_j_</sub>,  -4_u_<sub>_i_,_j_</sub>,  _u_<sub>_i_,_j-1_</sub>, and  _u_<sub>_i_,_j+1_</sub> terms in the sum (again, if they can be found in the partition: otherwise it'll yield 0, and hopefully the boundary data provides the result instead at that point), all scaled by the constant _C_. The reducer sums all this up, and then the results are saved to database as well as the current state store. Finally, the boundary data from this freshly computed data is written back to the Kafka topic "partition-boundaries", which feeds back into the beginning of the process. In some sense, this is not a DAG (directed acyclic graph) of computation, though of course we get around the fact that it isn't by realizing that loop as a topic.
+What's happening here is that "Heat Gen Data" and "Partition Boundary Data" are the Kafka topics. Heat Gen Data provides the terms _f_<sub>_i_,_j_</sub> in the equation, and Partition Boundary Data provides the _u_<sub>_i-1_,_j_</sub> or _u_<sub>_i+1_,_j_</sub> _when such data is needed_, namely, when _i_ is an index on the left or right boundary. The windowing processor rounds the timesteps corresponding to the generation data (and actually can average this over a window some number of time units long, so that the heat generation data is actually a running average of some number of timesteps. This compensates for a lot of near-misses in a better way than rounding can do alone). Our chosen time unit is 100 ms. Next, the nearest neighbor combiner generates the  _u_<sub>_i-1_,_j_</sub>,  _u_<sub>_i+1_,_j_</sub>,  -4_u_<sub>_i_,_j_</sub>,  _u_<sub>_i_,_j-1_</sub>, and  _u_<sub>_i_,_j+1_</sub> terms in the sum (again, if they can be found in the partition: otherwise it'll yield 0, and hopefully the boundary data provides the result instead at that point), all scaled by the constant _C_. Then the results are saved to database as well as the current state store. Finally, the boundary data from this freshly computed data is written back to the Kafka topic "partition-boundaries", which feeds back into the beginning of the process. In some sense, this is not a DAG (directed acyclic graph) of computation, though of course we get around the fact that it isn't by realizing that loop as a topic.
 
 ## <a name="cluster"> </a> Cluster Structure
 The structure of the clustes used:
@@ -136,4 +136,4 @@ This still does not eliminate the dropout problem completely (it only stops it f
 
 One can also adjust the grid size, which scales the problem quadratically in the number of nodes. That's how we can get some REALLY BIG data. Similarly, we could extend this to three dimensions (it would involve more indices, and adding an up/down term, and subtracting 6 times the middle rather than 4).
 
-<a href="foot1"></a> <sup>1</sup> "Mr. Data, what is the sensor array reading now?" -- Captain Jean-Luc Picard of the Starship _Enterprise_
+<a name="foot1"></a><sup>1</sup> "Mr. Data, what is the sensor array reading now?" -- Captain Jean-Luc Picard of the Starship _Enterprise_
