@@ -115,7 +115,7 @@ The structure of the clustes used:
 
 ## <a name="presentation"></a> Presentation
 
-At the [demo site](http://nestedtori.tech) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we noted in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 9 minutes of data (where the events are happening at about 10 per second, per node):
+At the [demo site](http://nestedtori.tech) (see an example screencast [here](https://youtu.be/htzNfaGb_R0), also) we are presented with two options: `roasting_ui_b_str` for the streaming version, and `roasting_ui_b` for the batch version. As we noted in the [Performance](#performance) section above, the batch version is the much better-looking and more correct version, but it is much slower; it took around 90 minutes to generate 9 minutes of data (where the events are happening at about 10 per second, per node):
 
 ![batch version](images/temp-batch.png)
 
