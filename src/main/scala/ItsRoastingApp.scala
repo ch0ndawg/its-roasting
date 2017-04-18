@@ -52,26 +52,27 @@ object ItsRoastingApp  {
     
     val temp = grid map (idx => tempFromIdx(idx._1,idx._2)) // REPLACE with: initial condition
     // REPLACE : Read up on Range Partitioning, and curse them for making the Python so different from Scala
-    val tempParallel = sc.parallelize(temp)//partitionBy(new RangePartitioner(nprocs))
-    val rangePartitioner = new RangePartitioner(nprocs,tempParallel)
+    val tempParallel = sc.parallelize(temp)
+    val rangePartitioner = new RangePartitioner(nprocs, tempParallel)
     
-    @tailrec 
-    def timeStep(u : org.apache.spark.rdd.RDD[((Int,Int),Double)], niter: Int) : Unit = {
+    def timeStep(u: org.apache.spark.rdd.RDD[((Int,Int),Double)], step: Int) = {
     	// WRITE u to database
       // format correctly
-    	val dbu = u map { case ((i,j),t) => (nsteps - niter, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
+    	val dbu = u map { case ((i,j),t) => (step, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
     	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
     
     	// COMPUTE next timestep
       val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
       val stencilParts = u flatMap (stencil(_,newStreamingData))
-      val newU = stencilParts reduceByKey (_+_)
-      
-      // next iteration
-      if (niter > 0) timeStep(newU.partitionBy(rangePartitioner), niter-1)
-      else newU.collect().foreach(println) //WRITE newTemp to database or just print
+    	 // maintain the range partitioner
+      stencilParts.reduceByKey(rangePartitioner, _+_).persist()
     }
-    timeStep(tempParallel.partitionBy(rangePartitioner), nsteps)
+                    
+    // executes all timesteps in a fold operation. Because our folding function has the side effect
+    // of writing to the database, all the intermediate values are actually saved
+    //  we could also do a scanLeft on a stream. That would be more hipster!
+    val finalU = (0 until nsteps).foldLeft(tempParallel.partitionBy(rangePartitioner))(timeStep)
+    finalU.collect().foreach(println)
   }
   def main(args: Array[String]) {
     val conf = new SparkConf()
