@@ -64,9 +64,9 @@ object ItsRoastingApp  {
     
     	// COMPUTE next timestep
       val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
-      val stencilParts = u flatMap (stencil(_,newStreamingData)) partitionBy rangePartitioner
+      val stencilParts = u flatMap (stencil(_,newStreamingData))
     	 // maintain the range partitioner
-      stencilParts.reduceByKey(_+_).persist()
+      stencilParts.reduceByKey(rangePartitioner, _+_).persist()
     }
                     
     // executes all timesteps in a fold operation. Because our folding function has the side effect
