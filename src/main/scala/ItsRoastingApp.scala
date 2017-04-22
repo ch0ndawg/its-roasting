@@ -54,6 +54,7 @@ object ItsRoastingApp  {
     // REPLACE : Read up on Range Partitioning, and curse them for making the Python so different from Scala
     val tempParallel = sc.parallelize(temp)
     val rangePartitioner = new RangePartitioner(nprocs, tempParallel)
+    val repartitionedTemp = tempParallel.partitionBy(rangePartitioner).persist()
     
     def timeStep(u: org.apache.spark.rdd.RDD[((Int,Int),Double)], step: Int) = {
     	// WRITE u to database
@@ -71,7 +72,7 @@ object ItsRoastingApp  {
     // executes all timesteps in a fold operation. Because our folding function has the side effect
     // of writing to the database, all the intermediate values are actually saved
     //  we could also do a scanLeft on a stream. That would be more hipster!
-    val finalU = (0 until nsteps).foldLeft(tempParallel.partitionBy(rangePartitioner))(timeStep)
+    val finalU = (0 until nsteps).foldLeft(repartitionedTemp)(timeStep)
     finalU.collect().foreach(println)
   }
   def main(args: Array[String]) {
