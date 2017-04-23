@@ -73,6 +73,7 @@ object ItsRoastingApp  {
     // of writing to the database, all the intermediate values are actually saved
     //  we could also do a scanLeft on a stream. That would be more hipster!
     val finalU = (0 until nsteps).foldLeft(repartitionedTemp)(timeStep)
+    finalU.dependencies.foreach(println)
     finalU.collect().foreach(println)
   }
   def main(args: Array[String]) {
