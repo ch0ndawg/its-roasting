@@ -61,10 +61,10 @@ object ItsRoastingApp  {
       // format correctly
     	val dbu = u map { case ((i,j),t) => (step, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
     	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
-    	u.localCheckpoint;
     	// COMPUTE next timestep
       val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
-      val stencilParts = u flatMap (stencil(_,newStreamingData))
+      val v = u.localCheckpoint()
+      val stencilParts = v flatMap (stencil(_,newStreamingData))
     	 // maintain the range partitioner
       stencilParts.reduceByKey(rangePartitioner, _+_).persist()
     }
