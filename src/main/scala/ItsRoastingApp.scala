@@ -61,15 +61,12 @@ object ItsRoastingApp  {
       // format correctly
     	val dbu = u map { case ((i,j),t) => (step, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
     	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
-    
+    	u.localCheckpoint;
     	// COMPUTE next timestep
       val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
       val stencilParts = u flatMap (stencil(_,newStreamingData))
     	 // maintain the range partitioner
-      val res = stencilParts.reduceByKey(rangePartitioner, _+_).persist()
-      u.localCheckpoint() // now that the reduce is successful, do a local checkpoint
-      // this will prevent the lineage graph from growing arbitrarily long
-      res
+      stencilParts.reduceByKey(rangePartitioner, _+_).persist()
     }
                     
     // executes all timesteps in a fold operation. Because our folding function has the side effect
