@@ -24,7 +24,6 @@ public class HeatGenStreamProcessor {
 	public static int numCols;
 	public static int numRows;
 	public static int numPartitions;
-	public static int numInEach;
 	public static double C; 
 	public static int timeUnit = 100;
 	
@@ -32,14 +31,14 @@ public class HeatGenStreamProcessor {
 		return i == 0 || i == numCols - 1 || j ==0 || j == numRows - 1 ;
 	}
 	
-	public static boolean isLeftPartitionBoundary(int k) {
+	static boolean isLeftPartitionBoundary(int k) {
 		if (k == 0) return false; // actual boundary of the domain doesn't count
-		return k % numInEach == 0;
+		return (k-1)*numPartitions/numCols < k*numPartitions/numCols; 
 	}
 	
 	static boolean isRightPartitionBoundary(int k) {
 		if (k == numCols - 1) return false;
-		return k % numInEach == numInEach - 1;
+		return (k+1)*numPartitions/numCols > k*numPartitions/numCols; 
 	}
 	
     public static void main(String[] args) throws Exception {
@@ -74,7 +73,6 @@ public class HeatGenStreamProcessor {
         KafkaConsumer<GridLocation,TimeTempTuple> kafkaConsumer = new KafkaConsumer<GridLocation,TimeTempTuple> (props);
 
         numPartitions = kafkaConsumer.partitionsFor("heatgen-input").size();
-		numInEach = (int) (Math.ceil(numCols / (double)numPartitions) + 0.1);
 		
         kafkaConsumer.close();
         
@@ -111,15 +109,15 @@ public class HeatGenStreamProcessor {
 	
 	         
 	       /* KStream<GridLocation, TimeTempTuple> windowedSource = */
-	        source.mapValues(v -> new TimeTempTuple ( (long) Math.ceil((double)v.time/timeUnit - 0.5) * timeUnit, v.val ) )
-	        	// .aggregateByKey(() -> new TimeTempTuple(0,0.0),
+	        source//.mapValues(v -> new TimeTempTuple ( (long) Math.ceil((double)v.time/timeUnit - 0.5) * timeUnit, v.val ) )
+	        	 .aggregateByKey(() -> new TimeTempTuple(0,0.0),
 	        			// sum up multiple occurrences, if necessary
-	        //	(k,v,acc) -> new TimeTempTuple( acc.time + 1 /* this is a counter, not a time */, acc.val + v.val),       // future work: use explicit watermarking
-	        //	TimeWindows.of("heatgen-windowed", timeUnit /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
+	        	(k,v,acc) -> new TimeTempTuple( acc.time + 1 /* this is a counter, not a time */, acc.val + v.val),       // future work: use explicit watermarking
+	        	TimeWindows.of("heatgen-windowed", 3*timeUnit /* milliseconds */).advanceBy(timeUnit)) // to account for missing data;  
 	        	// change the windowed data into plain timestamp data
-	       // 	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
-	       // 	.toStream() // change back to a stream
-	       // 	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v))) 
+	        	.mapValues( p -> p.time != 0 ? C * p.val/p.time : 0.0 )
+	        	.toStream() // change back to a stream
+	        	.map( (k, v) -> new KeyValue<> (k.key(), new TimeTempTuple(k.window().end(), v))) 
 	        	
 	        	.to(streamPartitioner,"heatgen-intermediate-topic"); // repartition the stream
 	        // should get average rate in window, and all timestamps should be standardized!
