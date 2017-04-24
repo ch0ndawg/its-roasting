@@ -41,8 +41,8 @@ public class HeatGenStreamProcessor {
 		return (k+1)*numPartitions/numCols > k*numPartitions/numCols; 
 	}
 	
-    public static void main(String[] args) throws Exception {
-    	Properties props = new Properties();
+	public static void main(String[] args) throws Exception {
+		Properties props = new Properties();
 		numCols  = Integer.parseInt(args[1]);
 		numRows = Integer.parseInt(args[2]);
 
@@ -165,5 +165,5 @@ public class HeatGenStreamProcessor {
 	
 			Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
 		}
-    }
+	}
 }
