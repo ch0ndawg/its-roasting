@@ -42,17 +42,12 @@ public class HeatGenStreamProcessor {
 	}
 	
     public static void main(String[] args) throws Exception {
-        Properties props = new Properties();
+    	Properties props = new Properties();
 		numCols  = Integer.parseInt(args[1]);
 		numRows = Integer.parseInt(args[2]);
 
-		double leftX = (args.length < 6)? -10.0 : Double.parseDouble(args[5]);
-		double rightX = (args.length < 7)? 10.0 : Double.parseDouble(args[6]);
-		double bottomY =(args.length < 8)? -10.0 : Double.parseDouble(args[7]);
-		double topY = (args.length < 9)? 10.0 : Double.parseDouble(args[8]);
-		
 		// default should specify the parameter on the command line
-		 C = (args.length < 10) ? 0.1875 : Double.parseDouble(args[9]);
+		C = (args.length < 10) ? 0.1875 : Double.parseDouble(args[9]);
       
 		HeatGenStreamPartitioner streamPartitioner = new HeatGenStreamPartitioner(numCols);
 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "heatgen-processor");
@@ -69,11 +64,11 @@ public class HeatGenStreamProcessor {
 		props.put(StreamsConfig.TIMESTAMP_EXTRACTOR_CLASS_CONFIG, HeatGenTimestampExtractor.class.getName());
         
         // dummy needed to get # of partitions; streaming doesn't allow ready access to this
-        KafkaConsumer<GridLocation,TimeTempTuple> kafkaConsumer = new KafkaConsumer<GridLocation,TimeTempTuple> (props);
+		KafkaConsumer<GridLocation,TimeTempTuple> kafkaConsumer = new KafkaConsumer<GridLocation,TimeTempTuple> (props);
 
-        numPartitions = kafkaConsumer.partitionsFor("heatgen-input").size();
+		numPartitions = kafkaConsumer.partitionsFor("heatgen-input").size();
 		
-        kafkaConsumer.close();
+		kafkaConsumer.close();
         
 		if (Integer.parseInt(args[0]) == 0) {
 			// if zero, start the producer
@@ -164,7 +159,7 @@ public class HeatGenStreamProcessor {
 				.to(streamPartitioner, "partition-boundaries"); 
 			partitionBoundaryStreams[1].map((k,v)->new KeyValue<>(new GridLocation(k.i + 1, k.j), new TimeTempTuple(v.time + timeUnit, v.val)))
 				.to(streamPartitioner, "partition-boundaries"); 
-	        
+			
 			KafkaStreams streams = new KafkaStreams(builder, props);
 			streams.start();
 	
