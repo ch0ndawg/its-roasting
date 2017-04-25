@@ -82,7 +82,7 @@ public class TempConsumer implements Runnable {
 		KafkaConsumer<GridLocation, TimeTempTuple> consumer = 
 				new KafkaConsumer<GridLocation, TimeTempTuple>(props);
 		
-		PreparedStatement ps = session.prepare("insert into heatgen.temps_str (time,x_coord,y_coord,temp) values (?,?,?,?)");
+		PreparedStatement ps = session.prepare("insert into heatgen.temps (time,x_coord,y_coord,temp) values (?,?,?,?)");
 		ps.setConsistencyLevel(ConsistencyLevel.ANY);
 		try {
 			consumer.subscribe(Arrays.asList("temp-output"));
