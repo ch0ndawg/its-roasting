@@ -38,10 +38,10 @@ public class TempConsumer implements Runnable {
 	
 	private Cluster cassCluster = null;
 	private Session session = null;
-	private String server = "52.10.235.41";
-	private String server2 = "54.148.221.111";
-	private String server3 = "54.70.179.144";
-	private String server4 = "52.24.132.99";
+	private String server = "ip-172-31-44-232";
+	private String server2 = "ip-172-31-34-194";
+	private String server3 = "ip-172-31-33-124";
+	private String server4 = "ip-172-31-46-132";
 
 	
 	public void init(ProcessorContext context) {
