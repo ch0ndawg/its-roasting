@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 object ItsRoastingApp  {
   // ALERT: This should not be hard-coded.
   val conductivity = 1.0 // global constant
+  val QUEUE_SIZE = 50
   val rng = new Random
 
   def simulation(sc: SparkContext, ncells : Int, nsteps : Int, nprocs: Int, rateParam: Double = 1.0, probParam: Double = 0.1, leftX: Double = -10.0, rightX: Double = 10.0,
@@ -56,28 +57,34 @@ object ItsRoastingApp  {
     val rangePartitioner = new RangePartitioner(nprocs, tempParallel)
     val repartitionedTemp = tempParallel.partitionBy(rangePartitioner).persist()
     
-    def timeStep(u: Tuple3[org.apache.spark.rdd.RDD[((Int,Int),Double)],
-                           org.apache.spark.rdd.RDD[((Int,Int),Double)],
-                           org.apache.spark.rdd.RDD[((Int,Int),Double)]], step: Int) = {
+    val uq = scala.collection.mutable.Queue[org.apache.spark.rdd.RDD[((Int,Int),Double)]]()
+    def timeStep(u: org.apache.spark.rdd.RDD[((Int,Int),Double)], step: Int) = {
     	// WRITE u to database
       // format correctly
-    	val dbu = u._3 map { case ((i,j),t) => (step, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
+    	val dbu = u map { case ((i,j),t) => (step, leftX + dx*i +dx/2.0, bottomY + dy*j + dy/2.0, t) }
     	dbu.saveToCassandra("heatgen", "temps", SomeColumns("time", "x_coord", "y_coord","temp"))
     
     	// COMPUTE next timestep
       val newStreamingData = Vector[Double]() // REPLACE WITH Kafka stream
-      val stencilParts = u._3.flatMap(stencil(_,newStreamingData))
+      val stencilParts = u.flatMap(stencil(_,newStreamingData))
+      
+      // save persisted RDD in the queue
+      uq.enqueue(u)
+      
+      // unpersist the oldest thing in the queue and truncate lineage
+    	val v = uq.dequeue()
+    	v.unpersist()
+    	v.localCheckpoint()
     	 // maintain the range partitioner
-    	u._1.unpersist()
-    	u._1.localCheckpoint()
-      (u._2, u._3, stencilParts.reduceByKey(rangePartitioner, _+_).persist())
+      stencilParts.reduceByKey(rangePartitioner, _+_).persist()
     }
                     
     // executes all timesteps in a fold operation. Because our folding function has the side effect
     // of writing to the database, all the intermediate values are actually saved
     //  we could also do a scanLeft on a stream. That would be more hipster!
-    val finalU = (0 until nsteps).foldLeft((repartitionedTemp,repartitionedTemp,repartitionedTemp))(timeStep)
-    finalU._3.collect().foreach(println)
+    for (i <- 0 until QUEUE_SIZE) uq.enqueue(repartitionedTemp)
+    val finalU = (0 until nsteps).foldLeft(repartitionedTemp)(timeStep)
+    finalU.collect().foreach(println)
   }
   def main(args: Array[String]) {
     val conf = new SparkConf()
